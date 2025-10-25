@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import AddButton from "./AddButton";
@@ -13,7 +12,7 @@ export default function EmptyState({ message, buttonText, onButtonPress }: Empty
     return (
         <View style={styles.container}>
             <Text style={styles.message}>{message}</Text>
-            <AddButton title={buttonText} onPress={onButtonPress} />
+            <AddButton label={buttonText} onPress={onButtonPress} />
         </View>
     );
 }

@@ -9,7 +9,6 @@ const db = SQLite.openDatabaseSync('todolist.db');
 export const initDatabase = (): void => {
     try {
         db.withTransactionSync(() => {
-            // Create tables only if they don't exist - don't drop existing data
             db.execSync(`
                 CREATE TABLE IF NOT EXISTS tasks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +32,6 @@ export const initDatabase = (): void => {
             `);
         });
 
-        // Only log once per app session
         if (!(global as any).dbInitialized) {
             console.log('✅ Database initialized successfully');
             (global as any).dbInitialized = true;

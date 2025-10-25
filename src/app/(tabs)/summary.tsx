@@ -1,38 +1,28 @@
+import ActivityBreakdownChart from '@/components/summary/ActivityBreakdownChart';
+import SummaryCard from '@/components/summary/SummaryCard';
+import SummaryTabs from '@/components/summary/SummaryTabs';
+import TasksOverviewChart from '@/components/summary/TasksOverviewChart';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-// Components
-import StatCard from '@/components/summary/StatCard';
-import TaskCompletionChart from '@/components/summary/TaskCompletionChart';
-
-const summaryData = {
-    tasksCompleted: 125,
-    tasksInProgress: 20,
-    habitsCompleted: 300,
-    completionRate: 85,
-};
-
-const chartData = [
-    { label: 'Mon', value: 10 },
-    { label: 'Tue', value: 15 },
-    { label: 'Wed', value: 8 },
-    { label: 'Thu', value: 12 },
-    { label: 'Fri', value: 20 },
-    { label: 'Sat', value: 18 },
-    { label: 'Sun', value: 22 },
-];
 
 export default function SummaryScreen() {
     return (
-        <ScrollView style={styles.container}>
-            <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-                <StatCard title="Tasks Completed" value={String(summaryData.tasksCompleted)} icon="check-circle" />
-                <StatCard title="Tasks In Progress" value={String(summaryData.tasksInProgress)} icon="trending-up" />
-                <StatCard title="Habits Completed" value={String(summaryData.habitsCompleted)} icon="repeat" />
-                <StatCard title="Completion Rate" value={`${summaryData.completionRate}%`} icon="pie-chart" />
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+            <SummaryTabs />
 
-                <TaskCompletionChart title="Weekly Task Completion" data={chartData} />
+            <View style={styles.row}>
+                <SummaryCard title="Tasks Completed" value="12/15" change="+15.3%" positive />
+                <SummaryCard title="Habits Tracked" value="6/7" change="+5.1%" positive />
             </View>
+
+            <View style={styles.row}>
+                <SummaryCard title="Events Attended" value="3" change="-2.4%" />
+                <SummaryCard title="Productivity Score" value="88%" change="+7.8%" positive />
+            </View>
+
+            <TasksOverviewChart />
+            <ActivityBreakdownChart />
         </ScrollView>
     );
 }
@@ -41,5 +31,13 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    content: {
+        padding: 16,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 16,
     },
 });

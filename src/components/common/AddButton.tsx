@@ -20,8 +20,14 @@ const styles = StyleSheet.create({
     btn: {
         backgroundColor: "#f97316",
         paddingVertical: 15,
-        borderRadius: 10,
+        paddingHorizontal: 30,
+        marginTop: 20,
+        borderRadius: 15,
         alignItems: "center",
     },
-    text: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+    text: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "bold"
+    },
 });

@@ -9,8 +9,11 @@ type Props = {
 export default function RecommendedHabitCard({ title, description }: Props) {
     return (
         <View style={styles.card}>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.desc}>{description}</Text>
+            <View style={styles.textContainer}>
+                <Text style={styles.title}>{title}</Text>
+                <Text style={styles.desc}>{description}</Text>
+            </View>
+
             <TouchableOpacity style={styles.button}>
                 <Text style={styles.buttonText}>See More</Text>
             </TouchableOpacity>
@@ -25,6 +28,12 @@ const styles = StyleSheet.create({
         padding: 16,
         width: '45%',
         marginBottom: 16,
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: 150,
+    },
+    textContainer: {
+        flexShrink: 1,
     },
     title: {
         fontSize: 15,
@@ -38,10 +47,12 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     button: {
+        width: '100%',
         backgroundColor: '#FF8C42',
         borderRadius: 8,
         paddingVertical: 6,
         alignItems: 'center',
+        marginTop: 'auto',
     },
     buttonText: {
         color: '#fff',

@@ -1,37 +1,78 @@
-import RecommendedHabitCard from '@/components/habits/RecommendedHabitCard';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+const colors = [
+    '#FFD93D', '#FF7F3F', '#FF6F91', '#6BCB77', '#4D96FF',
+    '#845EC2', '#B55400', '#FFB830', '#3CCF4E',
+];
 
 export default function CreateHabit() {
-    const habits = [
-        { title: 'Personal Development', description: 'Learn techniques to improve' },
-        { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-        { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-        { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-        { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-        { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-    ];
+    const [habitName, setHabitName] = useState('');
+    const [selectedColor, setSelectedColor] = useState('#FFD93D');
+    const [reminder, setReminder] = useState(true);
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Create Habit</Text>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* ➕ Nút tròn */}
-                <View style={styles.centerButton}>
-                    <TouchableOpacity style={styles.addButton}>
-                        <Ionicons name="add" size={48} color="#fff" />
-                    </TouchableOpacity>
+            {/* Habit name */}
+            <Text style={styles.label}>Habit Name</Text>
+            <TextInput
+                value={habitName}
+                onChangeText={setHabitName}
+                placeholder="Enter habit name"
+                style={styles.input}
+            />
+
+            {/* Color Picker */}
+            <Text style={styles.label}>Custom</Text>
+            <View style={styles.colorRow}>
+                {colors.map((c, i) => (
+                    <TouchableOpacity
+                        key={i}
+                        style={[
+                            styles.colorDot,
+                            { backgroundColor: c },
+                            selectedColor === c && styles.selectedDot,
+                        ]}
+                        onPress={() => setSelectedColor(c)}
+                    />
+                ))}
+            </View>
+
+            {/* Options Card */}
+            <View style={styles.optionsCard}>
+                <View style={styles.optionRow}>
+                    <Ionicons name="repeat" size={20} color="#E16A00" />
+                    <Text style={styles.optionText}>Repeat</Text>
                 </View>
 
-                {/* Danh sách habits */}
-                <Text style={styles.sectionTitle}>Recommended habits</Text>
-                <View style={styles.grid}>
-                    {habits.map((h, i) => (
-                        <RecommendedHabitCard key={i} {...h} />
-                    ))}
+                <View style={styles.optionRow}>
+                    <Ionicons name="calendar" size={20} color="#E16A00" />
+                    <Text style={styles.optionText}>Start Date</Text>
                 </View>
-            </ScrollView>
+
+                <View style={styles.optionRow}>
+                    <Ionicons name="calendar-outline" size={20} color="#E16A00" />
+                    <Text style={styles.optionText}>End Date</Text>
+                </View>
+
+                <View style={styles.optionRow}>
+                    <Ionicons name="notifications-outline" size={20} color="#E16A00" />
+                    <Text style={styles.optionText}>Reminder</Text>
+                    <Switch
+                        trackColor={{ false: '#ccc', true: '#FF8C42' }}
+                        thumbColor={'#fff'}
+                        value={reminder}
+                        onValueChange={setReminder}
+                        style={{ marginLeft: 'auto' }}
+                    />
+                </View>
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity style={styles.button}>
+                <Text style={styles.buttonText}>Promis</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -40,44 +81,67 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-        paddingTop: 20,
+        padding: 20,
     },
-    centerButton: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginVertical: 20,
+    label: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#444',
+        marginBottom: 6,
     },
-    addButton: {
-        width: 100,
-        height: 100,
-        backgroundColor: '#FF8C42',
-        borderRadius: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowOffset: { width: 0, height: 3 },
-        shadowRadius: 4,
-    },
-    title: {
-        color: '#333',
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
+    input: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 8,
+        padding: 10,
+        fontSize: 14,
         marginBottom: 20,
     },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginLeft: 20,
-        marginBottom: 10,
-    },
-    grid: {
+    colorRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-around',
-        paddingHorizontal: 10,
-        paddingBottom: 40,
+        gap: 10,
+        marginBottom: 25,
+    },
+    colorDot: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+    },
+    selectedDot: {
+        borderWidth: 2,
+        borderColor: '#333',
+    },
+    optionsCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        marginBottom: 40,
+    },
+    optionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 14,
+    },
+    optionText: {
+        fontSize: 15,
+        color: '#333',
+        marginLeft: 10,
+    },
+    button: {
+        backgroundColor: '#FF8C42',
+        borderRadius: 8,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

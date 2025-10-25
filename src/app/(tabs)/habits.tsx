@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useRef, useState } from "react";
-import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
-// Compoents
+// Components
 import HabitCard from '@/components/habits/HabitCard';
 import ProgressHeader from '@/components/habits/ProgressHeader';
 import RecommendedHabitCard from '@/components/habits/RecommendedHabitCard';
@@ -10,51 +11,60 @@ import FloatingAddButton from '@/components/tasks/FloatingAddButton';
 import WeekCalendar from "@/components/tasks/WeekCalendar";
 import { getNow } from '@/utils/dateUtils';
 
-
 const habits = [
-    {
-        title: 'Get up early',
-        dateRange: 'Every day from 3 May to 10 May',
-        progress: 75,
-        color: '#FF6B6B',
-    },
-    {
-        title: 'Drink 2 lit water',
-        dateRange: 'Every day from 3 May to 20 May',
-        progress: 75,
-        color: '#3B82F6',
-    },
+    { title: 'Get up early', dateRange: 'Every day from 3 May to 10 May', progress: 75, color: '#FF6B6B' },
+    { title: 'Drink 2 lit water', dateRange: 'Every day from 3 May to 20 May', progress: 75, color: '#3B82F6' },
+    { title: 'Exercise', dateRange: 'Every day from 3 May to 20 May', progress: 75, color: '#3B82F6' },
+    { title: 'Exercise', dateRange: 'Every day from 3 May to 20 May', progress: 75, color: '#3B82F6' },
+    { title: 'Exercise', dateRange: 'Every day from 3 May to 20 May', progress: 75, color: '#3B82F6' },
+
 ];
 
 const recommendedHabits = [
     { title: 'Personal Development', description: 'Learn techniques to improve' },
     { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-    { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-    { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-    { title: 'Eat Healthy', description: 'Learn techniques to improve' },
-    { title: 'Eat Healthy', description: 'Learn techniques to improve' },
+    { title: 'Read Books', description: 'Develop daily reading habit' },
+    { title: 'Read Books', description: 'Develop daily reading habit' },
+    { title: 'Read Books', description: 'Develop daily reading habit' },
+    { title: 'Read Books', description: 'Develop daily reading habit' },
 ];
 
 export default function HabitsScreen() {
+    const router = useRouter();
     const [selectedDate, setSelectedDate] = useState(getNow());
     const [isModalVisible, setIsModalVisible] = useState(false);
     const slideAnim = useRef(new Animated.Value(0)).current;
 
+    const openModal = () => {
+        setIsModalVisible(true);
+        Animated.timing(slideAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const closeModal = () => {
+        Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+        }).start(() => setIsModalVisible(false));
+    };
+
     return (
         <View style={styles.container}>
+
+            <ProgressHeader
+                title="Combat Procrastination"
+                subtitle="You're making great progress!"
+                progress={75}
+            />
+            <WeekCalendar
+                selectedDate={new Date(selectedDate)}
+                onSelectDate={(date) => setSelectedDate(date)}
+            />
             <ScrollView showsVerticalScrollIndicator={false}>
-                <ProgressHeader
-                    title="Combat Procrastination"
-                    subtitle="You're making great progress!"
-                    progress={75}
-                />
-
-                {/* 📅 Lịch tuần */}
-                <WeekCalendar
-                    selectedDate={new Date(selectedDate)}
-                    onSelectDate={(date) => setSelectedDate(date)}
-                />
-
                 <View style={styles.list}>
                     {habits.map((h, i) => (
                         <HabitCard key={i} {...h} />
@@ -62,73 +72,60 @@ export default function HabitsScreen() {
                 </View>
             </ScrollView>
 
-            <FloatingAddButton onPress={() => {
-                setIsModalVisible(true);
-                Animated.timing(slideAnim, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                }).start();
-            }} />
+            <FloatingAddButton onPress={openModal} />
 
-            {/* Modal for creating habits */}
+            {/* Modal */}
             <Modal
                 visible={isModalVisible}
                 animationType="none"
-                transparent={true}
-                onRequestClose={() => {
-                    Animated.timing(slideAnim, {
-                        toValue: 0,
-                        duration: 300,
-                        useNativeDriver: true,
-                    }).start(() => setIsModalVisible(false));
-                }}
+                transparent
+                onRequestClose={closeModal}
             >
-                <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => {
-                    Animated.timing(slideAnim, {
-                        toValue: 0,
-                        duration: 300,
-                        useNativeDriver: true,
-                    }).start(() => setIsModalVisible(false));
-                }}>
-                    <Animated.View style={[styles.modalContent, {
-                        transform: [{
-                            translateY: slideAnim.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [600, 0],
-                            }),
-                        }],
-                    }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Create New Habit</Text>
-                            <TouchableOpacity onPress={() => {
-                                Animated.timing(slideAnim, {
-                                    toValue: 0,
-                                    duration: 300,
-                                    useNativeDriver: true,
-                                }).start(() => setIsModalVisible(false));
-                            }} style={styles.closeButton}>
-                                <Ionicons name="close" size={24} color="#000" />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            {/* ➕ Nút tròn */}
-                            <View style={styles.centerButton}>
-                                <TouchableOpacity style={styles.addButton}>
-                                    <Ionicons name="add" size={48} color="#fff" />
-                                </TouchableOpacity>
-                            </View>
+                {/* Vùng overlay bên ngoài modal */}
+                <TouchableWithoutFeedback onPress={closeModal}>
+                    <View style={styles.modalOverlay}>
+                        {/* Ngăn chặn touch xuyên modal nội dung */}
+                        <TouchableWithoutFeedback>
+                            <Animated.View
+                                style={[
+                                    styles.modalContent,
+                                    {
+                                        transform: [
+                                            {
+                                                translateY: slideAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [600, 0],
+                                                }),
+                                            },
+                                        ],
+                                    },
+                                ]}
+                            >
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>Create New Habit</Text>
+                                    <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
+                                        <Ionicons name="close" size={24} color="#000" />
+                                    </TouchableOpacity>
+                                </View>
 
-                            {/* Danh sách habits */}
-                            <Text style={styles.sectionTitle}>Recommended habits</Text>
-                            <View style={styles.grid}>
-                                {recommendedHabits.map((h, i) => (
-                                    <RecommendedHabitCard key={i} {...h} />
-                                ))}
-                            </View>
-                        </ScrollView>
-                    </Animated.View>
-                </TouchableOpacity>
+                                <View style={styles.centerButton}>
+                                    <TouchableOpacity style={styles.addButton} onPress={() => router.push('/pages/createhabit')}>
+                                        <Ionicons name="add" size={48} color="#fff" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={styles.sectionTitle}>Recommended habits</Text>
+                                <ScrollView showsVerticalScrollIndicator={false}>
+                                    <View style={styles.grid}>
+                                        {recommendedHabits.map((h, i) => (
+                                            <RecommendedHabitCard key={i} {...h} />
+                                        ))}
+                                    </View>
+                                </ScrollView>
+                            </Animated.View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
             </Modal>
         </View>
     );
@@ -193,14 +190,14 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 20,
-        marginBottom: 10,
+        marginBottom: 12,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-around',
         paddingHorizontal: 10,
+        marginTop: 8,
         paddingBottom: 40,
     },
 });
-
