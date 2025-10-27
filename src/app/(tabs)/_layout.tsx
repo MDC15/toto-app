@@ -30,7 +30,7 @@ export default function TabsLayout() {
         }
       }}
     >
-      <AntDesign name="left" size={20} color={isDark ? '#FFF' : '#171a1f'} />
+      <AntDesign name="left" size={24} color={isDark ? '#FFF' : '#171a1f'} />
     </TouchableOpacity>
   );
 
@@ -131,7 +131,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="summary"
         options={{
-          title: 'Performance Summary',
+          title: 'Summary',
           headerShown: true,
           headerLeft: () => <BackButton />,
           headerRight: () => <SettingsButton />,
