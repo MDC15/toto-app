@@ -61,12 +61,14 @@ export default function TasksScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
           {filteredTasks.map((task) => {
             const deadline = new Date(task.deadline);
+            const todayString = new Date().toDateString();
+            const taskDateString = deadline.toDateString();
+            const due = `${taskDateString === todayString ? 'Today' : deadline.toLocaleDateString()}, ${deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
             return (
               <TaskCard
                 key={task.id}
                 title={task.title}
-                date={deadline.toDateString()}
-                dueTime={deadline.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                due={due}
                 description={task.description}
                 priority={task.priority}
                 completed={task.completed}

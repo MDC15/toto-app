@@ -38,6 +38,7 @@ export default function HomeScreen() {
                 timeRange: `${format(startTime, 'p')} - ${format(endTime, 'p')}`,
                 date: format(startTime, 'E, d MMM yyyy'),
                 icon: getIconForTitle(event.title),
+                color: event.color || '#ec4899', // Default color if none set
             };
         });
         setEvents(formattedEvents);

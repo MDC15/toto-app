@@ -9,7 +9,8 @@ import {
     View, ViewStyle
 } from 'react-native';
 import EmptyState from '../common/EmptyState';
-import GradientCard from './GradientCard';
+import EventCardHome from './EventCardHome';
+import TaskCardHome from './TaskCardHome';
 import { TaskItem } from './types';
 
 interface TaskSectionProps {
@@ -75,14 +76,21 @@ export default function TaskSection({
                     contentContainerStyle={styles.scrollContainer}
                 >
                     {items.map((item) => (
-                        <GradientCard
-                            key={item.id}
-                            title={item.title}
-                            subtitle1={type === 'task' ? `Due: ${item.due}` : item.timeRange}
-                            subtitle2={type === 'event' ? item.date : item.description ? item.description : undefined}
-                            colors={colors}
-                            style={{ marginRight: 14 }}
-                        />
+                        type === 'task' ? (
+                            <TaskCardHome
+                                key={item.id}
+                                item={item}
+                                colors={colors}
+                                style={{ marginRight: 14 }}
+                            />
+                        ) : (
+                            <EventCardHome
+                                key={item.id}
+                                item={item}
+                                colors={colors}
+                                style={{ marginRight: 14 }}
+                            />
+                        )
                     ))}
                 </ScrollView>
             ) : (

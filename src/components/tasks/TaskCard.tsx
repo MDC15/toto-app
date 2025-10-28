@@ -1,12 +1,11 @@
-import { AntDesign, Feather } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface TaskCardProps {
     title: string;
     description?: string;
-    dueTime: string;
-    date?: string;
+    due?: string;
     priority: "High" | "Medium" | "Low";
     completed: boolean;
     onEdit: () => void;
@@ -23,8 +22,7 @@ const priorityColors = {
 export default function TaskCard({
     title,
     description,
-    dueTime,
-    date,
+    due,
     priority,
     completed,
     onEdit,
@@ -70,21 +68,14 @@ export default function TaskCard({
                     )}
 
                     {/* Ngày & Giờ */}
-                    <View style={styles.dateTimeWrapper}>
-                        <View style={styles.dateRow}>
-                            <Feather name="calendar" size={14} color="#6b7280" />
-                            <Text style={styles.dueText}>{date ?? "Today"}</Text>
+                    {!!due && (
+                        <View style={styles.dateTimeWrapper}>
+                            <View style={styles.dateRow}>
+                                <Feather name="calendar" size={14} color="#6b7280" />
+                                <Text style={styles.dueText}>{due}</Text>
+                            </View>
                         </View>
-                        <View style={styles.timeRow}>
-                            <AntDesign name="clock-circle" size={14} color="#6b7280" />
-                            <Text style={styles.dueText}>
-                                {new Date(dueTime).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                })}
-                            </Text>
-                        </View>
-                    </View>
+                    )}
                 </View>
 
                 {/* Nút edit / delete */}

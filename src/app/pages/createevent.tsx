@@ -102,15 +102,15 @@ export default function CreateEventScreen() {
                 <Text style={styles.label}>Event Color</Text>
                 <View style={styles.colorRow}>
                     {[
-                        "#f97316", // Orange
-                        "#ef4444", // Red
-                        "#10b981", // Green
-                        "#3b82f6", // Blue
-                        "#8b5cf6", // Purple
-                        "#f59e0b", // Yellow
-                        "#ec4899", // Pink
-                        "#06b6d4", // Cyan
-                        "#84cc16"  // Lime
+                        "#fed7aa", // Light Orange
+                        "#fecaca", // Light Red
+                        "#d1fae5", // Light Green
+                        "#dbeafe", // Light Blue
+                        "#e9d5ff", // Light Purple
+                        "#fef3c7", // Light Yellow
+                        "#fce7f3", // Light Pink
+                        "#cffafe", // Light Cyan
+                        "#ecfccb"  // Light Lime
                     ].map((color, index) => (
                         <TouchableOpacity
                             key={index}

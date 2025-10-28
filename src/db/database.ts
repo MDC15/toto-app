@@ -9,6 +9,7 @@ const db = SQLite.openDatabaseSync('todolist.db');
 export const initDatabase = (): void => {
     try {
         db.withTransactionSync(() => {
+            // Create tasks table
             db.execSync(`
                 CREATE TABLE IF NOT EXISTS tasks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,6 +21,7 @@ export const initDatabase = (): void => {
                 );
             `);
 
+            // Create events table
             db.execSync(`
                 CREATE TABLE IF NOT EXISTS events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,16 +34,8 @@ export const initDatabase = (): void => {
             `);
 
             // Add new columns if they don't exist
-            try {
-                db.execSync(`ALTER TABLE events ADD COLUMN reminder TEXT;`);
-            } catch (e) {
-                // Column might already exist
-            }
-            try {
-                db.execSync(`ALTER TABLE events ADD COLUMN color TEXT;`);
-            } catch (e) {
-                // Column might already exist
-            }
+            addColumnIfNotExists('events', 'reminder', 'TEXT');
+            addColumnIfNotExists('events', 'color', 'TEXT');
         });
 
         if (!(global as any).dbInitialized) {
@@ -53,10 +47,19 @@ export const initDatabase = (): void => {
     }
 };
 
+// Helper function to add columns safely
+const addColumnIfNotExists = (table: string, column: string, type: string): void => {
+    try {
+        db.execSync(`ALTER TABLE ${table} ADD COLUMN ${column} ${type};`);
+    } catch {
+        // Column might already exist, ignore error
+    }
+};
+
 // ==========================
 // 📋 TASK FUNCTIONS
 // ==========================
-export const addTask = (title: string, description: string, deadline: string, priority: string) => {
+export const addTask = (title: string, description: string, deadline: string, priority: string): void => {
     try {
         db.withTransactionSync(() => {
             db.runSync(
@@ -73,9 +76,7 @@ export const addTask = (title: string, description: string, deadline: string, pr
 
 export const getTasks = (): any[] => {
     try {
-        const result = db.getAllSync(
-            `SELECT * FROM tasks ORDER BY id DESC;`
-        );
+        const result = db.getAllSync(`SELECT * FROM tasks ORDER BY id DESC;`);
         return result;
     } catch (error) {
         console.error('❌ Error fetching tasks:', error);
@@ -90,7 +91,7 @@ export const updateTask = (
     deadline: string,
     priority: string,
     completed: boolean
-) => {
+): void => {
     try {
         db.runSync(
             `UPDATE tasks SET title = ?, description = ?, deadline = ?, priority = ?, completed = ? WHERE id = ?;`,
@@ -103,7 +104,7 @@ export const updateTask = (
     }
 };
 
-export const deleteTask = (id: number) => {
+export const deleteTask = (id: number): void => {
     try {
         db.runSync(`DELETE FROM tasks WHERE id = ?;`, [id]);
         console.log(`🗑️ Task ${id} deleted`);
@@ -116,7 +117,7 @@ export const deleteTask = (id: number) => {
 // ==========================
 // 📅 EVENT FUNCTIONS
 // ==========================
-export const addEvent = (title: string, startTime: string, endTime: string, description: string, reminder?: string, color?: string) => {
+export const addEvent = (title: string, startTime: string, endTime: string, description: string, reminder?: string, color?: string): void => {
     try {
         db.runSync(
             `INSERT INTO events (title, start_time, end_time, description, reminder, color) VALUES (?, ?, ?, ?, ?, ?);`,
@@ -148,19 +149,17 @@ export const updateEvent = (
     completed?: boolean,
     reminder?: string,
     color?: string
-) => {
+): void => {
     try {
-        if (completed !== undefined) {
-            db.runSync(
-                `UPDATE events SET title = ?, start_time = ?, end_time = ?, description = ?, completed = ?, reminder = ?, color = ? WHERE id = ?;`,
-                [title, startTime, endTime, description, completed ? 1 : 0, reminder || null, color || null, id]
-            );
-        } else {
-            db.runSync(
-                `UPDATE events SET title = ?, start_time = ?, end_time = ?, description = ?, reminder = ?, color = ? WHERE id = ?;`,
-                [title, startTime, endTime, description, reminder || null, color || null, id]
-            );
-        }
+        const params = completed !== undefined
+            ? [title, startTime, endTime, description, completed ? 1 : 0, reminder || null, color || null, id]
+            : [title, startTime, endTime, description, reminder || null, color || null, id];
+
+        const query = completed !== undefined
+            ? `UPDATE events SET title = ?, start_time = ?, end_time = ?, description = ?, completed = ?, reminder = ?, color = ? WHERE id = ?;`
+            : `UPDATE events SET title = ?, start_time = ?, end_time = ?, description = ?, reminder = ?, color = ? WHERE id = ?;`;
+
+        db.runSync(query, params);
         console.log(`✅ Event ${id} updated`);
     } catch (error) {
         console.error('❌ Error updating event:', error);
@@ -168,7 +167,7 @@ export const updateEvent = (
     }
 };
 
-export const deleteEvent = (id: number) => {
+export const deleteEvent = (id: number): void => {
     try {
         db.runSync(`DELETE FROM events WHERE id = ?;`, [id]);
         console.log(`🗑️ Event ${id} deleted`);

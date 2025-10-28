@@ -14,4 +14,5 @@ export interface TaskItem {
     timeRange?: string; // cho event
     date?: string;     // cho event
     icon?: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+    color?: string;    // cho event
 }

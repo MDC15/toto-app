@@ -28,7 +28,7 @@ export default function EventCard({
     onDelete,
 }: EventCardProps) {
     return (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: color }]}>
             {/* Thanh màu thể hiện trạng thái */}
             <View
                 style={[styles.statusIndicator, { backgroundColor: color }]}
