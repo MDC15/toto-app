@@ -30,6 +30,18 @@ export const initDatabase = (): void => {
                     completed INTEGER DEFAULT 0
                 );
             `);
+
+            // Add new columns if they don't exist
+            try {
+                db.execSync(`ALTER TABLE events ADD COLUMN reminder TEXT;`);
+            } catch (e) {
+                // Column might already exist
+            }
+            try {
+                db.execSync(`ALTER TABLE events ADD COLUMN color TEXT;`);
+            } catch (e) {
+                // Column might already exist
+            }
         });
 
         if (!(global as any).dbInitialized) {
@@ -104,11 +116,11 @@ export const deleteTask = (id: number) => {
 // ==========================
 // 📅 EVENT FUNCTIONS
 // ==========================
-export const addEvent = (title: string, startTime: string, endTime: string, description: string) => {
+export const addEvent = (title: string, startTime: string, endTime: string, description: string, reminder?: string, color?: string) => {
     try {
         db.runSync(
-            `INSERT INTO events (title, start_time, end_time, description) VALUES (?, ?, ?, ?);`,
-            [title, startTime, endTime, description]
+            `INSERT INTO events (title, start_time, end_time, description, reminder, color) VALUES (?, ?, ?, ?, ?, ?);`,
+            [title, startTime, endTime, description, reminder || null, color || null]
         );
         console.log('✅ Event added');
     } catch (error) {
@@ -133,18 +145,20 @@ export const updateEvent = (
     startTime: string,
     endTime: string,
     description: string,
-    completed?: boolean
+    completed?: boolean,
+    reminder?: string,
+    color?: string
 ) => {
     try {
         if (completed !== undefined) {
             db.runSync(
-                `UPDATE events SET title = ?, start_time = ?, end_time = ?, description = ?, completed = ? WHERE id = ?;`,
-                [title, startTime, endTime, description, completed ? 1 : 0, id]
+                `UPDATE events SET title = ?, start_time = ?, end_time = ?, description = ?, completed = ?, reminder = ?, color = ? WHERE id = ?;`,
+                [title, startTime, endTime, description, completed ? 1 : 0, reminder || null, color || null, id]
             );
         } else {
             db.runSync(
-                `UPDATE events SET title = ?, start_time = ?, end_time = ?, description = ? WHERE id = ?;`,
-                [title, startTime, endTime, description, id]
+                `UPDATE events SET title = ?, start_time = ?, end_time = ?, description = ?, reminder = ?, color = ? WHERE id = ?;`,
+                [title, startTime, endTime, description, reminder || null, color || null, id]
             );
         }
         console.log(`✅ Event ${id} updated`);

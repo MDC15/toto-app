@@ -37,6 +37,8 @@ export default function EventsScreen() {
                 icon: getIconForTitle(event.title),
                 description: event.description,
                 completed: !!event.completed,
+                color: event.color || "#f97316",
+                reminder: event.reminder,
                 startTime: startTime,
             };
         });
@@ -68,7 +70,9 @@ export default function EventsScreen() {
                 startTime.toISOString(),
                 endTime.toISOString(),
                 event.description || '',
-                !event.completed
+                !event.completed,
+                event.reminder,
+                event.color
             );
             await fetchEvents();
         }
@@ -113,6 +117,8 @@ export default function EventsScreen() {
                             date={event.date}
                             icon={event.icon}
                             completed={event.completed}
+                            color={event.color}
+                            reminder={event.reminder}
                             onToggleComplete={() => handleToggleComplete(event.id)}
                             onEdit={() => handleEdit(event.id)}
                             onDelete={() => handleDelete(event.id)}

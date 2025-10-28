@@ -15,6 +15,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import ReminderSelector from "@/components/common/ReminderSelector";
 
 export default function EditEventScreen() {
     const router = useRouter();
@@ -24,6 +25,9 @@ export default function EditEventScreen() {
     const [description, setDescription] = useState("");
     const [startTime, setStartTime] = useState(new Date());
     const [endTime, setEndTime] = useState(new Date());
+    const [reminderEnabled, setReminderEnabled] = useState(false);
+    const [reminderTime, setReminderTime] = useState("5 minutes before");
+    const [eventColor, setEventColor] = useState("#f97316");
 
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showStartTimePicker, setShowStartTimePicker] = useState(false);
@@ -40,6 +44,9 @@ export default function EditEventScreen() {
                     setDescription(event.description || "");
                     setStartTime(new Date(event.start_time));
                     setEndTime(new Date(event.end_time));
+                    setReminderEnabled(!!event.reminder);
+                    setReminderTime(event.reminder || "5 minutes before");
+                    setEventColor(event.color || "#f97316");
                 }
             } catch (error) {
                 console.error("Error loading event:", error);
@@ -65,7 +72,10 @@ export default function EditEventScreen() {
                 title,
                 startTime.toISOString(),
                 endTime.toISOString(),
-                description
+                description,
+                false, // completed
+                reminderEnabled ? reminderTime : undefined,
+                eventColor
             );
             router.back();
         } catch (error) {
@@ -102,6 +112,34 @@ export default function EditEventScreen() {
                     multiline
                     textAlignVertical="top"
                 />
+
+                <ReminderSelector
+                    enabled={reminderEnabled}
+                    selected={reminderTime}
+                    onToggle={setReminderEnabled}
+                    onSelect={setReminderTime}
+                />
+
+                <Text style={styles.label}>Event Color</Text>
+                <View style={styles.colorRow}>
+                    {[
+                        "#f97316", // Orange
+                        "#ef4444", // Red
+                        "#10b981", // Green
+                        "#3b82f6", // Blue
+                        "#8b5cf6", // Purple
+                        "#f59e0b", // Yellow
+                        "#ec4899", // Pink
+                        "#06b6d4", // Cyan
+                        "#84cc16"  // Lime
+                    ].map((color, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={[styles.colorOption, { backgroundColor: color }, eventColor === color && styles.colorSelected]}
+                            onPress={() => setEventColor(color)}
+                        />
+                    ))}
+                </View>
 
                 <Text style={styles.label}>Start Time</Text>
                 <View style={styles.row}>
@@ -231,4 +269,14 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     updateButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+    colorRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap" },
+    colorOption: {
+        width: 35,
+        height: 35,
+        borderRadius: 17.5,
+        borderWidth: 2,
+        borderColor: "#d1d5db",
+        marginHorizontal: 2,
+    },
+    colorSelected: { borderColor: "#000", borderWidth: 3 },
 });

@@ -8,6 +8,8 @@ interface EventCardProps {
     date: string;
     icon: string;
     completed?: boolean;
+    color?: string;
+    reminder?: string;
     onToggleComplete?: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
@@ -19,6 +21,8 @@ export default function EventCard({
     date,
     icon,
     completed = false,
+    color = "#f97316",
+    reminder,
     onToggleComplete,
     onEdit,
     onDelete,
@@ -27,7 +31,7 @@ export default function EventCard({
         <View style={styles.card}>
             {/* Thanh màu thể hiện trạng thái */}
             <View
-                style={[styles.statusIndicator, { backgroundColor: completed ? "#10b981" : "#f97316" }]}
+                style={[styles.statusIndicator, { backgroundColor: color }]}
             />
 
             <View style={styles.content}>
@@ -63,6 +67,14 @@ export default function EventCard({
                                 {date}
                             </Text>
                         </View>
+                        {reminder && (
+                            <View style={styles.reminderRow}>
+                                <Feather name="bell" size={14} color="#6b7280" />
+                                <Text style={[styles.reminderText, completed && styles.textCompletedLight]}>
+                                    {reminder}
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -149,5 +161,15 @@ const styles = StyleSheet.create({
     textCompletedLight: {
         textDecorationLine: "line-through",
         color: "#d1d5db",
+    },
+    reminderRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 2,
+    },
+    reminderText: {
+        fontSize: 13,
+        color: "#4b5563",
+        marginLeft: 6,
     },
 });
