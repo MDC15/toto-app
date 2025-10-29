@@ -7,7 +7,7 @@ type Props = {
     onPress?: () => void;
 };
 
-export default function RecommendedHabitCard({ title, description, onPress }: Props) {
+export default function RecommendedTaskCard({ title, description, onPress }: Props) {
     return (
         <View style={styles.card}>
             <View style={styles.textContainer}>

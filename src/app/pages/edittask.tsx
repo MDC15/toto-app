@@ -1,3 +1,4 @@
+import AlertModal from "@/components/common/AlertModal";
 import PrioritySelector from "@/components/tasks/PrioritySelector";
 import { useTasks } from "@/contexts/TasksContext";
 import { Feather } from "@expo/vector-icons";
@@ -5,7 +6,6 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Alert,
     Keyboard,
     KeyboardAvoidingView,
     Modal,
@@ -37,6 +37,13 @@ export default function EditTaskScreen() {
     const [reminderEnabled, setReminderEnabled] = useState(false);
     const [reminderTime, setReminderTime] = useState("15 minutes before");
 
+    // Alert modal states
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertType, setAlertType] = useState<'warning' | 'success' | 'error' | 'info'>('warning');
+    const [alertTitle, setAlertTitle] = useState('');
+    const [alertMessage, setAlertMessage] = useState('');
+    const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
     useEffect(() => {
         const task = taskFromContext;
         if (task) {
@@ -57,6 +64,17 @@ export default function EditTaskScreen() {
 
     const descRef = useRef<TextInput>(null);
 
+    // Helper function to show alert modal
+    const showAlert = (type: 'warning' | 'success' | 'error' | 'info', title: string, message: string, action?: () => void) => {
+        setAlertType(type);
+        setAlertTitle(title);
+        setAlertMessage(message);
+        setPendingAction(() => action || null);
+        setAlertVisible(true);
+    };
+
+    // Handle back button press
+
     const reminderOptions = [
         "5 minutes before",
         "15 minutes before",
@@ -75,25 +93,31 @@ export default function EditTaskScreen() {
 
     const handleSaveTask = () => {
         Keyboard.dismiss();
+
+        // Validation
         if (!title.trim()) {
-            Alert.alert("Missing title", "Please enter a task title.");
+            showAlert('warning', 'Missing Title', 'Please enter a task title.');
             return;
         }
         if (!priority) {
-            Alert.alert("Select priority", "Please choose a priority for your task.");
+            showAlert('warning', 'Select Priority', 'Please choose a priority for your task.');
             return;
         }
 
-        if (idParam) {
-            updateTask(idParam, {
-                title,
-                description,
-                due: deadline.toISOString(),
-                priority,
-            });
-        }
+        // Success action
+        const saveTask = () => {
+            if (idParam) {
+                updateTask(idParam, {
+                    title,
+                    description,
+                    due: deadline.toISOString(),
+                    priority,
+                });
+            }
+            router.back();
+        };
 
-        router.back();
+        showAlert('success', 'Save Task', 'Are you sure you want to save these changes?', saveTask);
     };
 
 
@@ -222,6 +246,17 @@ export default function EditTaskScreen() {
                     <Text style={styles.addButtonText}>Save Task</Text>
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* Alert Modal */}
+            <AlertModal
+                visible={alertVisible}
+                type={alertType}
+                title={alertTitle}
+                message={alertMessage}
+                onConfirm={pendingAction || (() => setAlertVisible(false))}
+                onCancel={() => setAlertVisible(false)}
+                onClose={() => setAlertVisible(false)}
+            />
 
             {/* 🪄 Reminder Modal */}
             <Modal

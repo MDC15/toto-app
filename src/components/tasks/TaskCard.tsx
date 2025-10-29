@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { responsive } from '@/constants/theme';
 
 interface TaskCardProps {
     title: string;
@@ -95,8 +96,8 @@ export default function TaskCard({
 const styles = StyleSheet.create({
     card: {
         backgroundColor: "#fff",
-        borderRadius: 12,
-        marginBottom: 16,
+        borderRadius: responsive.spacing(12),
+        marginBottom: responsive.spacing(16),
         shadowColor: "#000",
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -106,53 +107,53 @@ const styles = StyleSheet.create({
         overflow: "hidden",
     },
     priorityIndicator: {
-        width: 5,
+        width: responsive.spacing(5),
     },
     content: {
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 16,
-        paddingHorizontal: 12,
+        paddingVertical: responsive.spacing(16),
+        paddingHorizontal: responsive.spacing(12),
     },
     iconButton: {
-        marginRight: 12,
+        marginRight: responsive.spacing(12),
     },
     texts: {
         flex: 1,
     },
     title: {
         fontWeight: "700",
-        fontSize: 17,
+        fontSize: responsive.fontSize(17),
         color: "#1f2937",
-        marginBottom: 2,
+        marginBottom: responsive.spacing(2),
     },
     description: {
-        fontSize: 14,
+        fontSize: responsive.fontSize(14),
         color: "#6b7280",
-        marginBottom: 8,
+        marginBottom: responsive.spacing(8),
     },
     dateTimeWrapper: {
-        marginTop: 4,
+        marginTop: responsive.spacing(4),
     },
     dateRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 2,
+        marginBottom: responsive.spacing(2),
     },
     timeRow: {
         flexDirection: "row",
         alignItems: "center",
     },
     dueText: {
-        fontSize: 13,
+        fontSize: responsive.fontSize(13),
         color: "#4b5563",
-        marginLeft: 6,
+        marginLeft: responsive.spacing(6),
     },
     actions: {
         flexDirection: "row",
         alignItems: "center",
-        marginLeft: 12,
+        marginLeft: responsive.spacing(12),
     },
     textCompleted: {
         textDecorationLine: "line-through",

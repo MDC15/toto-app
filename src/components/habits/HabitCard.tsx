@@ -1,24 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { responsive } from '@/constants/theme';
 
 type Props = {
     title: string;
     dateRange: string;
     progress: number;
     color: string;
+    onPress?: () => void;
 };
 
-export default function HabitCard({ title, dateRange, progress, color }: Props) {
+export default function HabitCard({ title, dateRange, progress, color, onPress }: Props) {
     return (
-        <View style={[styles.card, { borderColor: color }]}>
+        <TouchableOpacity style={[styles.card, { backgroundColor: color + '20', borderColor: color }]} onPress={onPress}>
             <View style={styles.header}>
                 <Text style={[styles.title, { color }]}>{title}</Text>
-                <Ionicons
-                    name={progress === 100 ? 'checkmark-circle' : 'checkmark'}
-                    size={22}
-                    color={color}
-                />
+                <View style={styles.checkboxContainer}>
+                    <Ionicons
+                        name={progress === 100 ? 'checkmark-circle' : 'radio-button-off'}
+                        size={24}
+                        color={progress === 100 ? '#10b981' : '#9ca3af'}
+                    />
+                </View>
             </View>
             <Text style={styles.date}>{dateRange}</Text>
 
@@ -28,17 +32,17 @@ export default function HabitCard({ title, dateRange, progress, color }: Props) 
                 />
             </View>
 
-            <Text style={[styles.percent, { color }]}>{progress}%</Text>
-        </View>
+            <Text style={[styles.percent, { color }]}>{Math.round(progress)}%</Text>
+        </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
     card: {
         borderWidth: 1.5,
-        borderRadius: 12,
-        padding: 12,
-        marginVertical: 6,
+        borderRadius: responsive.spacing(12),
+        padding: responsive.spacing(12),
+        marginVertical: responsive.spacing(6),
     },
     header: {
         flexDirection: 'row',
@@ -47,26 +51,30 @@ const styles = StyleSheet.create({
     },
     title: {
         fontWeight: 'bold',
-        fontSize: 15,
+        fontSize: responsive.fontSize(15),
+        flex: 1,
+    },
+    checkboxContainer: {
+        marginLeft: responsive.spacing(8),
     },
     date: {
         color: '#888',
-        fontSize: 12,
-        marginTop: 4,
+        fontSize: responsive.fontSize(12),
+        marginTop: responsive.spacing(4),
     },
     progressContainer: {
-        height: 6,
+        height: responsive.spacing(6),
         backgroundColor: '#eee',
-        borderRadius: 3,
-        marginTop: 8,
+        borderRadius: responsive.spacing(3),
+        marginTop: responsive.spacing(8),
     },
     progressBar: {
         height: '100%',
-        borderRadius: 3,
+        borderRadius: responsive.spacing(3),
     },
     percent: {
         textAlign: 'right',
         fontWeight: '600',
-        marginTop: 4,
+        marginTop: responsive.spacing(4),
     },
 });

@@ -6,6 +6,7 @@ import Animated, {
     useSharedValue,
     withSpring,
 } from 'react-native-reanimated';
+import { responsive } from '@/constants/theme';
 
 interface GradientCardProps {
     title: string;
@@ -68,10 +69,10 @@ export default function GradientCard({
 
 const styles = StyleSheet.create({
     card: {
-        borderRadius: 10,
-        padding: 16,
-        width: 220,
-        height: 120,
+        borderRadius: responsive.spacing(10),
+        padding: responsive.spacing(16),
+        width: responsive.width(55), // Responsive width based on screen size
+        height: responsive.height(15), // Responsive height
         justifyContent: 'space-between',
         shadowColor: '#000',
         shadowOpacity: 0.1,
@@ -81,13 +82,13 @@ const styles = StyleSheet.create({
     },
     title: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: responsive.fontSize(18),
         fontWeight: 'bold',
-        lineHeight: 22,
+        lineHeight: responsive.fontSize(22),
     },
     subtitle: {
         color: '#f8fafc',
-        fontSize: 14,
+        fontSize: responsive.fontSize(14),
         opacity: 0.9,
     },
 });

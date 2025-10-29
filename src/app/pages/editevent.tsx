@@ -1,10 +1,10 @@
 import { getEvents, updateEvent } from "@/db/database";
+import AlertModal from "@/components/common/AlertModal";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
     Keyboard,
     KeyboardAvoidingView,
     Platform,
@@ -27,12 +27,28 @@ export default function EditEventScreen() {
     const [endTime, setEndTime] = useState(new Date());
     const [reminderEnabled, setReminderEnabled] = useState(false);
     const [reminderTime, setReminderTime] = useState("5 minutes before");
-    const [eventColor, setEventColor] = useState("#f97316");
+    const [eventColor, setEventColor] = useState("#fed7aa");
 
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showStartTimePicker, setShowStartTimePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+
+    // Alert modal states
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertType, setAlertType] = useState<'warning' | 'success' | 'error' | 'info'>('warning');
+    const [alertTitle, setAlertTitle] = useState('');
+    const [alertMessage, setAlertMessage] = useState('');
+    const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+    // Helper function to show alert modal
+    const showAlert = (type: 'warning' | 'success' | 'error' | 'info', title: string, message: string, action?: () => void) => {
+        setAlertType(type);
+        setAlertTitle(title);
+        setAlertMessage(message);
+        setPendingAction(() => action || null);
+        setAlertVisible(true);
+    };
 
     useEffect(() => {
         const loadEvent = async () => {
@@ -46,11 +62,11 @@ export default function EditEventScreen() {
                     setEndTime(new Date(event.end_time));
                     setReminderEnabled(!!event.reminder);
                     setReminderTime(event.reminder || "5 minutes before");
-                    setEventColor(event.color || "#f97316");
+                    setEventColor(event.color || "#fed7aa");
                 }
             } catch (error) {
                 console.error("Error loading event:", error);
-                Alert.alert("Error", "Could not load the event.");
+                showAlert('error', 'Error', 'Could not load the event.');
             }
         };
 
@@ -61,27 +77,34 @@ export default function EditEventScreen() {
 
     const handleUpdateEvent = async () => {
         Keyboard.dismiss();
+
+        // Validation
         if (!title.trim()) {
-            Alert.alert("Missing title", "Please enter an event title.");
+            showAlert('warning', 'Missing Title', 'Please enter an event title.');
             return;
         }
 
-        try {
-            await updateEvent(
-                parseInt(id as string),
-                title,
-                startTime.toISOString(),
-                endTime.toISOString(),
-                description,
-                false, // completed
-                reminderEnabled ? reminderTime : undefined,
-                eventColor
-            );
-            router.back();
-        } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "Could not update the event.");
-        }
+        // Success action
+        const updateEventAction = async () => {
+            try {
+                await updateEvent(
+                    parseInt(id as string),
+                    title,
+                    startTime.toISOString(),
+                    endTime.toISOString(),
+                    description,
+                    false, // completed
+                    reminderEnabled ? reminderTime : undefined,
+                    eventColor
+                );
+                router.back();
+            } catch (error) {
+                console.error(error);
+                showAlert('error', 'Error', 'Could not update the event.');
+            }
+        };
+
+        showAlert('success', 'Update Event', 'Are you sure you want to update this event?', updateEventAction);
     };
 
     return (
@@ -231,6 +254,17 @@ export default function EditEventScreen() {
                     <Text style={styles.updateButtonText}>Update Event</Text>
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* Alert Modal */}
+            <AlertModal
+                visible={alertVisible}
+                type={alertType}
+                title={alertTitle}
+                message={alertMessage}
+                onConfirm={pendingAction || (() => setAlertVisible(false))}
+                onCancel={() => setAlertVisible(false)}
+                onClose={() => setAlertVisible(false)}
+            />
         </KeyboardAvoidingView>
     );
 }

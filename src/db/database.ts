@@ -33,9 +33,27 @@ export const initDatabase = (): void => {
                 );
             `);
 
+            // Create habits table
+            db.execSync(`
+                CREATE TABLE IF NOT EXISTS habits (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    frequency TEXT NOT NULL,
+                    target_count INTEGER NOT NULL,
+                    current_count INTEGER DEFAULT 0,
+                    color TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    completed INTEGER DEFAULT 0
+                );
+            `);
+
             // Add new columns if they don't exist
             addColumnIfNotExists('events', 'reminder', 'TEXT');
             addColumnIfNotExists('events', 'color', 'TEXT');
+            addColumnIfNotExists('habits', 'start_date', 'TEXT');
+            addColumnIfNotExists('habits', 'end_date', 'TEXT');
+            addColumnIfNotExists('habits', 'reminder', 'TEXT');
         });
 
         if (!(global as any).dbInitialized) {
@@ -173,6 +191,87 @@ export const deleteEvent = (id: number): void => {
         console.log(`🗑️ Event ${id} deleted`);
     } catch (error) {
         console.error('❌ Error deleting event:', error);
+        throw error;
+    }
+};
+
+// ==========================
+// 🏃 HABITS FUNCTIONS
+// ==========================
+export const addHabit = (title: string, description: string, frequency: string, targetCount: number, color?: string, startDate?: string, endDate?: string, reminder?: string): void => {
+    try {
+        db.runSync(
+            `INSERT INTO habits (title, description, frequency, target_count, current_count, color, start_date, end_date, reminder) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?);`,
+            [title, description, frequency, targetCount, color || null, startDate || null, endDate || null, reminder || null]
+        );
+        console.log('✅ Habit added successfully');
+    } catch (error) {
+        console.error('❌ Error adding habit:', error);
+        throw error;
+    }
+};
+
+export const getHabits = (): any[] => {
+    try {
+        const result = db.getAllSync(`SELECT * FROM habits ORDER BY id DESC;`);
+        return result;
+    } catch (error) {
+        console.error('❌ Error fetching habits:', error);
+        throw error;
+    }
+};
+
+export const updateHabit = (
+    id: number,
+    title: string,
+    description: string,
+    frequency: string,
+    targetCount: number,
+    currentCount: number,
+    color?: string,
+    reminder?: string
+): void => {
+    try {
+        db.runSync(
+            `UPDATE habits SET title = ?, description = ?, frequency = ?, target_count = ?, current_count = ?, color = ?, reminder = ? WHERE id = ?;`,
+            [title, description, frequency, targetCount, currentCount, color || null, reminder || null, id]
+        );
+        console.log(`✅ Habit ${id} updated`);
+    } catch (error) {
+        console.error('❌ Error updating habit:', error);
+        throw error;
+    }
+};
+
+export const incrementHabitProgress = (id: number): void => {
+    try {
+        db.runSync(
+            `UPDATE habits SET current_count = current_count + 1 WHERE id = ? AND current_count < target_count;`,
+            [id]
+        );
+        console.log(`✅ Habit ${id} progress incremented`);
+    } catch (error) {
+        console.error('❌ Error incrementing habit progress:', error);
+        throw error;
+    }
+};
+
+export const resetHabitProgress = (id: number): void => {
+    try {
+        db.runSync(`UPDATE habits SET current_count = 0 WHERE id = ?;`, [id]);
+        console.log(`🔄 Habit ${id} progress reset`);
+    } catch (error) {
+        console.error('❌ Error resetting habit progress:', error);
+        throw error;
+    }
+};
+
+export const deleteHabit = (id: number): void => {
+    try {
+        db.runSync(`DELETE FROM habits WHERE id = ?;`, [id]);
+        console.log(`🗑️ Habit ${id} deleted`);
+    } catch (error) {
+        console.error('❌ Error deleting habit:', error);
         throw error;
     }
 };

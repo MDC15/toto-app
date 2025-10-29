@@ -1,11 +1,11 @@
+import AlertModal from "@/components/common/AlertModal";
 import PrioritySelector from "@/components/tasks/PrioritySelector";
 import { useTasks } from "@/contexts/TasksContext";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-    Alert,
     Keyboard,
     KeyboardAvoidingView,
     Modal,
@@ -22,14 +22,16 @@ import {
 
 export default function AddTaskScreen() {
     const router = useRouter();
+    const navigation = useNavigation();
     const { addTask } = useTasks();
+    const params = useLocalSearchParams();
 
     // 🧠 State quản lý
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
+    const [title, setTitle] = useState(params.title as string || "");
+    const [description, setDescription] = useState(params.description as string || "");
     const [deadline, setDeadline] = useState(new Date());
     const [priority, setPriority] = useState<"High" | "Medium" | "Low" | undefined>();
-    const [reminderEnabled, setReminderEnabled] = useState(false);
+    const [reminderEnabled, setReminderEnabled] = useState(params.reminder === "true");
     const [reminderTime, setReminderTime] = useState("15 minutes before");
 
     // ⏰ Picker states
@@ -37,7 +39,35 @@ export default function AddTaskScreen() {
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [showReminderPicker, setShowReminderPicker] = useState(false);
 
+    // Alert modal states
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertType, setAlertType] = useState<'warning' | 'success' | 'error' | 'info'>('warning');
+    const [alertTitle, setAlertTitle] = useState('');
+    const [alertMessage, setAlertMessage] = useState('');
+    const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+    const [onCancelAction, setOnCancelAction] = useState<(() => void) | null>(null);
+    const [cancelText, setCancelText] = useState('Cancel');
+    const [confirmText, setConfirmText] = useState('OK');
+
     const descRef = useRef<TextInput>(null);
+
+    // Handle hardware back button
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            const hasUnsavedChanges = title.trim() || description.trim() || priority;
+            if (!hasUnsavedChanges) {
+                return;
+            }
+
+            e.preventDefault();
+
+            showAlert('warning', 'Unsaved Changes', 'You have unsaved changes. Are you sure you want to go back?', () => {
+                navigation.dispatch(e.data.action);
+            });
+        });
+
+        return unsubscribe;
+    }, [navigation, title, description, priority]);
 
     // ⏳ Reminder options
     const reminderOptions = [
@@ -76,21 +106,41 @@ export default function AddTaskScreen() {
         return d.toDateString();
     };
 
+    // Helper function to show alert modal
+    const showAlert = (
+        type: 'warning' | 'success' | 'error' | 'info',
+        title: string,
+        message: string,
+        action?: () => void,
+        cancelAction?: () => void,
+        cancelText: string = 'Cancel',
+        confirmText: string = 'OK'
+    ) => {
+        setAlertType(type);
+        setAlertTitle(title);
+        setAlertMessage(message);
+        setPendingAction(() => action || null);
+        setOnCancelAction(() => cancelAction || null);
+        setCancelText(cancelText);
+        setConfirmText(confirmText);
+        setAlertVisible(true);
+    };
+
     // ✅ Add Task
     const handleAddTask = () => {
         Keyboard.dismiss();
+
+        // Validation
         if (!title.trim()) {
-            Alert.alert("Missing title", "Please enter a task title.");
+            showAlert('warning', 'Missing Title', 'Please enter a task title.');
             return;
         }
         if (!priority) {
-            Alert.alert(
-                "Select priority",
-                "Please choose a priority for your task."
-            );
+            showAlert('warning', 'Select Priority', 'Please choose a priority for your task.');
             return;
         }
 
+        // Add task
         addTask({
             title,
             description,
@@ -100,8 +150,11 @@ export default function AddTaskScreen() {
             due: undefined
         });
 
-        router.back();
+        // Show success alert
+        showAlert('success', 'Success', 'Task created successfully!', () => router.back(), undefined, '', 'OK');
     };
+
+    // Handle back button press
 
     return (
         <KeyboardAvoidingView
@@ -208,6 +261,19 @@ export default function AddTaskScreen() {
                     <Text style={styles.addButtonText}>+ Add Task</Text>
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* Alert Modal */}
+            <AlertModal
+                visible={alertVisible}
+                type={alertType}
+                title={alertTitle}
+                message={alertMessage}
+                cancelText={cancelText}
+                confirmText={confirmText}
+                onConfirm={pendingAction || (() => setAlertVisible(false))}
+                onCancel={onCancelAction || (() => setAlertVisible(false))}
+                onClose={() => setAlertVisible(false)}
+            />
 
             {/* 🪄 Reminder Modal */}
             <Modal

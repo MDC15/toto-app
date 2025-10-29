@@ -1,3 +1,5 @@
+import AlertModal from "@/components/common/AlertModal";
+import ReminderSelector from "@/components/common/ReminderSelector";
 import { addEvent } from "@/db/database";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -5,7 +7,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
     Keyboard,
     KeyboardAvoidingView,
     Platform,
@@ -16,7 +17,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import ReminderSelector from "@/components/common/ReminderSelector";
 
 export default function CreateEventScreen() {
     const router = useRouter();
@@ -27,12 +27,19 @@ export default function CreateEventScreen() {
     const [endTime, setEndTime] = useState(new Date());
     const [reminderEnabled, setReminderEnabled] = useState(false);
     const [reminderTime, setReminderTime] = useState("5 minutes before");
-    const [eventColor, setEventColor] = useState("#f97316");
+    const [eventColor, setEventColor] = useState("#fed7aa");
 
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showStartTimePicker, setShowStartTimePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+
+    // Alert modal states
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertType, setAlertType] = useState<'warning' | 'success' | 'error' | 'info'>('warning');
+    const [alertTitle, setAlertTitle] = useState('');
+    const [alertMessage, setAlertMessage] = useState('');
+    const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
     // Reset form when screen comes into focus
     useFocusEffect(
@@ -43,25 +50,44 @@ export default function CreateEventScreen() {
             setEndTime(new Date());
             setReminderEnabled(false);
             setReminderTime("5 minutes before");
-            setEventColor("#f97316");
+            setEventColor("#fed7aa");
         }, [])
     );
 
+    // Helper function to show alert modal
+    const showAlert = (type: 'warning' | 'success' | 'error' | 'info', title: string, message: string, action?: () => void) => {
+        setAlertType(type);
+        setAlertTitle(title);
+        setAlertMessage(message);
+        setPendingAction(() => action || null);
+        setAlertVisible(true);
+    };
+
     const handleAddEvent = async () => {
         Keyboard.dismiss();
+
+        // Validation
         if (!title.trim()) {
-            Alert.alert("Missing title", "Please enter an event title.");
+            showAlert('warning', 'Missing Title', 'Please enter an event title.');
             return;
         }
 
-        try {
-            await addEvent(title, startTime.toISOString(), endTime.toISOString(), description, reminderEnabled ? reminderTime : undefined, eventColor);
-            router.back();
-        } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "Could not save the event.");
-        }
+        // Success action
+        const createEvent = async () => {
+            try {
+                await addEvent(title, startTime.toISOString(), endTime.toISOString(), description, reminderEnabled ? reminderTime : undefined, eventColor);
+                router.back();
+            } catch (error) {
+                console.error(error);
+                showAlert('error', 'Error', 'Could not save the event.');
+            }
+        };
+
+        showAlert('success', 'Create Event', 'Are you sure you want to create this event?', createEvent);
     };
+
+    // Handle back button press
+
 
     return (
         <KeyboardAvoidingView
@@ -210,6 +236,17 @@ export default function CreateEventScreen() {
                     <Text style={styles.addButtonText}>+ Add Event</Text>
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* Alert Modal */}
+            <AlertModal
+                visible={alertVisible}
+                type={alertType}
+                title={alertTitle}
+                message={alertMessage}
+                onConfirm={pendingAction || (() => setAlertVisible(false))}
+                onCancel={() => setAlertVisible(false)}
+                onClose={() => setAlertVisible(false)}
+            />
         </KeyboardAvoidingView>
     );
 }

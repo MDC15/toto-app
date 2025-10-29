@@ -3,6 +3,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { responsive } from '@/constants/theme';
 
 interface GreetingCardProps {
     username?: string;
@@ -84,11 +85,11 @@ export default memo(GreetingCardComponent);
 
 const styles = StyleSheet.create({
     container: {
-        borderRadius: 16,
+        borderRadius: responsive.spacing(16),
         overflow: 'hidden',
         borderWidth: 2,
         borderColor: '#FDB833',
-        padding: 10,
+        padding: responsive.spacing(10),
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -97,28 +98,28 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 3,
-        height: 150,
+        height: responsive.height(18), // Responsive height
         backgroundColor: '#E96479',
     },
     textContainer: {
         flex: 1,
         justifyContent: 'center',
-        gap: 4,
+        gap: responsive.spacing(4),
     },
     title: {
         color: '#fff',
-        fontSize: 26,
+        fontSize: responsive.fontSize(26),
         fontWeight: '700',
-        marginBottom: 6,
+        marginBottom: responsive.spacing(6),
     },
     subtitle: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: responsive.fontSize(16),
         opacity: 0.9,
     },
     iconContainer: {
         flexDirection: 'row',
-        gap: 16,
-        marginLeft: 12,
+        gap: responsive.spacing(16),
+        marginLeft: responsive.spacing(12),
     },
 });

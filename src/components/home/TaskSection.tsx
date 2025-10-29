@@ -12,6 +12,7 @@ import EmptyState from '../common/EmptyState';
 import EventCardHome from './EventCardHome';
 import TaskCardHome from './TaskCardHome';
 import { TaskItem } from './types';
+import { responsive } from '@/constants/theme';
 
 interface TaskSectionProps {
     title: string;
@@ -106,30 +107,30 @@ export default function TaskSection({
 
 const styles = StyleSheet.create({
     container: {
-        marginTop: 18,
+        marginTop: responsive.spacing(18),
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
-        paddingHorizontal: 4,
+        marginBottom: responsive.spacing(12),
+        paddingHorizontal: responsive.spacing(4),
     },
     headerLeft: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: responsive.fontSize(20),
         fontWeight: '700',
         color: '#111',
     },
     seeAll: {
-        fontSize: 14,
+        fontSize: responsive.fontSize(14),
         color: '#9ca3af',
         fontWeight: '500',
     },
     scrollContainer: {
-        paddingRight: 12,
+        paddingRight: responsive.spacing(12),
     },
 });

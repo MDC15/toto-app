@@ -5,6 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
+import { responsive } from '@/constants/theme';
 
 // English locale configuration
 LocaleConfig.locales['en'] = {
@@ -147,30 +148,30 @@ export default function CalendarCard({ onDateSelect }: CalendarCardProps) {
 
 const styles = StyleSheet.create({
     container: {
-        height: 430,
+        height: responsive.height(50), // Responsive height
         backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 16,
+        padding: responsive.spacing(16),
+        borderRadius: responsive.spacing(16),
         elevation: 2,
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 6,
         shadowOffset: { width: 0, height: 2 },
-        marginVertical: 16,
+        marginVertical: responsive.spacing(16),
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: responsive.spacing(12),
     },
     monthText: {
-        fontSize: 20,
+        fontSize: responsive.fontSize(20),
         fontWeight: '600',
         color: '#374151',
     },
     calendar: {
-        borderRadius: 12,
+        borderRadius: responsive.spacing(12),
     },
     modalOverlay: {
         flex: 1,
@@ -179,19 +180,19 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         backgroundColor: '#fff',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        paddingBottom: 20,
+        borderTopLeftRadius: responsive.spacing(20),
+        borderTopRightRadius: responsive.spacing(20),
+        paddingBottom: responsive.spacing(20),
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        padding: 16,
+        padding: responsive.spacing(16),
         borderBottomWidth: 1,
         borderBottomColor: '#e5e7eb',
     },
     modalButton: {
-        fontSize: 17,
+        fontSize: responsive.fontSize(17),
         fontWeight: '600',
         color: '#f97316',
     },

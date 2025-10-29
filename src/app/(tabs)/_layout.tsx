@@ -1,5 +1,5 @@
 import { HapticTab } from '@/components/haptic-tab';
-import { Colors } from '@/constants/theme';
+import { Colors, responsive } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
@@ -17,9 +17,9 @@ export default function TabsLayout() {
   const BackButton = () => (
     <TouchableOpacity
       style={{
-        marginLeft: 16,
-        borderRadius: 30,
-        padding: 8,
+        marginLeft: responsive.spacing(16),
+        borderRadius: responsive.spacing(30),
+        padding: responsive.spacing(8),
       }}
       activeOpacity={0.7}
       onPress={() => {
@@ -30,7 +30,7 @@ export default function TabsLayout() {
         }
       }}
     >
-      <AntDesign name="left" size={24} color={isDark ? '#FFF' : '#171a1f'} />
+      <AntDesign name="left" size={responsive.fontSize(24)} color={isDark ? '#FFF' : '#171a1f'} />
     </TouchableOpacity>
   );
 
@@ -38,14 +38,14 @@ export default function TabsLayout() {
   const SettingsButton = () => (
     <TouchableOpacity
       style={{
-        marginRight: 16,
-        borderRadius: 30,
-        padding: 8,
+        marginRight: responsive.spacing(16),
+        borderRadius: responsive.spacing(30),
+        padding: responsive.spacing(8),
       }}
       activeOpacity={0.7}
       onPress={() => router.navigate('/pages/settings')}
     >
-      <AntDesign name="setting" size={24} color={isDark ? '#FFF' : '#171a1f'} />
+      <AntDesign name="setting" size={responsive.fontSize(24)} color={isDark ? '#FFF' : '#171a1f'} />
     </TouchableOpacity>
   );
 
@@ -58,8 +58,17 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: isDark ? '#1A1A1A' : '#FFF',
           borderTopColor: isDark ? '#333' : '#ddd',
+          height: responsive.height(8), // Responsive tab bar height
+          paddingBottom: responsive.spacing(5),
+          paddingTop: responsive.spacing(5),
         },
         tabBarButton: HapticTab,
+        tabBarLabelStyle: {
+          fontSize: responsive.fontSize(12), // Responsive tab label font size
+        },
+        tabBarIconStyle: {
+          marginTop: responsive.spacing(2),
+        },
       }}
     >
       {/* ✅ Home Tab (index) */}

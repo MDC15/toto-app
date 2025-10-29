@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import CalendarCard from '@/components/home/CalendarCard';
@@ -7,10 +7,13 @@ import GreetingCard from '@/components/home/GreetingCard';
 import TaskSection from '@/components/home/TaskSection';
 import { TaskItem, TaskTypes } from '@/components/home/types';
 import { useTasks } from '@/contexts/TasksContext';
+import { useUser } from '@/contexts/UserContext';
+import NameInputModal from '@/components/common/NameInputModal';
 import { getEvents } from '@/db/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { router } from 'expo-router';
+import { responsive } from '@/constants/theme';
 
 const getIconForTitle = (title: string): React.ComponentProps<typeof MaterialCommunityIcons>['name'] => {
     if (title.toLowerCase().includes('read')) return 'book-open-page-variant';
@@ -22,10 +25,26 @@ const getIconForTitle = (title: string): React.ComponentProps<typeof MaterialCom
 };
 
 export default function HomeScreen() {
-    const username = 'Alice';
+    const { userName, setUserName, isLoading } = useUser();
     const { tasks } = useTasks();
     const [events, setEvents] = useState<TaskItem[]>([]);
     const [selectedDate, setSelectedDate] = React.useState(new Date());
+    const [showNameModal, setShowNameModal] = useState(false);
+
+    useEffect(() => {
+        if (!isLoading && !userName) {
+            setShowNameModal(true);
+        }
+    }, [isLoading, userName]);
+
+    const handleNameConfirm = async (name: string) => {
+        await setUserName(name);
+        setShowNameModal(false);
+    };
+
+    const handleNameCancel = () => {
+        setShowNameModal(false);
+    };
 
     const fetchEvents = async () => {
         const dbEvents = await getEvents();
@@ -75,7 +94,7 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
             showsHorizontalScrollIndicator={false}
         >
-            <GreetingCard username={username} />
+            <GreetingCard username={userName || 'User'} />
             <CalendarCard onDateSelect={setSelectedDate} />
             <TaskSection
                 title={`${selectedDateString === todayString ? 'Today\'s' : 'Selected Date'} Tasks`}
@@ -93,6 +112,11 @@ export default function HomeScreen() {
                 iconName="calendar-month"
                 onAdd={() => router.push('/pages/createevent')}
             />
+            <NameInputModal
+                visible={showNameModal}
+                onConfirm={handleNameConfirm}
+                onCancel={handleNameCancel}
+            />
         </ScrollView>
     );
 };
@@ -103,8 +127,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
     },
     contentContainer: {
-        paddingHorizontal: 16,
-        paddingTop: 56,
-        paddingBottom: 32,
+        paddingHorizontal: responsive.spacing(16),
+        paddingTop: responsive.spacing(56),
+        paddingBottom: responsive.spacing(32),
     },
 });
