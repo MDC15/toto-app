@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,8 +17,9 @@ import {
     getHabits,
     isHabitCompletedForDate,
     markHabitCompletedForDate,
+    parseHabitDate,
 } from '@/db/database';
-import { getNow } from '@/utils/dateUtils';
+import { getDateString, getNow } from '@/utils/dateUtils';
 
 export default function HabitsScreen() {
     const router = useRouter();
@@ -36,18 +37,21 @@ export default function HabitsScreen() {
     const loadHabits = useCallback(async () => {
         try {
             const dbHabits = await getHabits();
-            const selectedDateString = new Date(selectedDate).toISOString().split('T')[0];
-            const todayString = new Date().toISOString().split('T')[0];
-            const selectedDateObj = new Date(selectedDate);
+            const selectedDateString = getDateString(selectedDate);
+            const todayString = getDateString(getNow());
+
+            // Normalize selected date to ensure consistent comparison
+            const normalizedSelectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+            const selectedDateObj = normalizedSelectedDate;
 
             const habitsWithProgress = await Promise.all(
                 dbHabits.map(async (habit: any) => {
                     // Check if habit is completed for the selected date
                     const isDone = await isHabitCompletedForDate(habit.id, selectedDateString);
 
-                    // Check if habit is active on the selected date
-                    const start = new Date(habit.start_date || new Date());
-                    const end = habit.end_date ? new Date(habit.end_date) : null;
+                    // Check if habit is active on the selected date using consistent date parsing
+                    const start = parseHabitDate(habit.start_date || new Date().toISOString());
+                    const end = habit.end_date ? parseHabitDate(habit.end_date) : null;
 
                     const isInDateRange =
                         start <= selectedDateObj &&
@@ -60,12 +64,25 @@ export default function HabitsScreen() {
                         (habit.allow_multiple_per_day || !isDone) &&
                         selectedDateString <= todayString;
 
-                    // Calculate progress based on completed dates in the current period
+                    // Calculate total days from start date to end date
+                    const actualEndDate = end || selectedDateObj;
+                    const totalDays = Math.ceil((actualEndDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+                    // Get all completed dates and filter to only include dates within the habit's date range
                     const completedDates = JSON.parse(habit.completed_dates || '[]');
-                    const totalCompleted = completedDates.length;
-                    const progress = habit.target_count > 0 ?
-                        Math.min((totalCompleted / habit.target_count) * 100, 100) :
-                        (isDone ? 100 : 0);
+                    const normalizedStart = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                    const normalizedEnd = new Date(actualEndDate.getFullYear(), actualEndDate.getMonth(), actualEndDate.getDate());
+
+                    const completedDatesInRange = completedDates.filter((date: string) => {
+                        const completedDate = parseHabitDate(date);
+                        const normalizedCompletedDate = new Date(completedDate.getFullYear(), completedDate.getMonth(), completedDate.getDate());
+                        return normalizedCompletedDate >= normalizedStart && normalizedCompletedDate <= normalizedEnd;
+                    }).length;
+
+                    // Calculate progress based on completed dates within the habit's date range vs total possible days
+                    const progress = totalDays > 0 ?
+                        Math.min((completedDatesInRange / totalDays) * 100, 100) :
+                        0;
 
                     return {
                         id: habit.id,
@@ -78,25 +95,31 @@ export default function HabitsScreen() {
                         endDate: end,
                         frequency: habit.frequency,
                         targetCount: habit.target_count,
-                        completedCount: totalCompleted,
+                        completedCount: completedDatesInRange,
+                        totalDaysInPeriod: totalDays,
                     };
                 })
             );
 
             const validHabits = habitsWithProgress.filter(Boolean);
             setHabits(validHabits);
-        } catch (e) {
-            console.error('Error loading habits:', e);
+        } catch (error) {
+            console.error('Error loading habits:', error);
             setHabits([]);
         }
     }, [selectedDate]);
 
     useFocusEffect(useCallback(() => void loadHabits(), [loadHabits]));
 
+    // Reload habits when selected date changes
+    useEffect(() => {
+        loadHabits();
+    }, [loadHabits, selectedDate]);
+
     // ✅ Sự kiện
     const handleCheckIn = async (id: number) => {
-        const dateStr = new Date(selectedDate).toISOString().split('T')[0];
-        const todayStr = new Date().toISOString().split('T')[0];
+        const dateStr = getDateString(selectedDate);
+        const todayStr = getDateString(getNow());
         if (dateStr > todayStr) return;
 
         const habit = habits.find((h) => h.id === id);
@@ -154,6 +177,7 @@ export default function HabitsScreen() {
                                 frequency={h.frequency}
                                 targetCount={h.targetCount}
                                 completedCount={h.completedCount}
+                                totalDaysInPeriod={h.totalDaysInPeriod}
                                 onPress={() => navigate('/pages/viewhabit', h.id)}
                                 onEdit={() => navigate('/pages/edithabit', h.id)}
                                 onDelete={() => handleDelete(h.id)}

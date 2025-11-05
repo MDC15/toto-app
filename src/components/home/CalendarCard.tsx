@@ -1,5 +1,5 @@
 import { responsive } from "@/constants/theme";
-import { getNow } from "@/utils/dateUtils";
+import { getDateString, getNow } from "@/utils/dateUtils";
 import { FontAwesome5 } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useMemo, useState } from "react";
@@ -30,7 +30,7 @@ LocaleConfig.locales["en"] = {
 LocaleConfig.defaultLocale = "en";
 
 const TODAY = getNow();
-const TODAY_STRING = TODAY.toISOString().split("T")[0];
+const TODAY_STRING = getDateString(TODAY);
 const { width } = Dimensions.get("window");
 
 interface CalendarCardProps {
@@ -108,7 +108,7 @@ export default function CalendarCard({ onDateSelect, markedData = [] }: Calendar
             {/* Calendar */}
             <Calendar
                 key={displayedDate.toISOString()}
-                current={displayedDate.toISOString().split("T")[0]}
+                current={getDateString(displayedDate)}
                 onDayPress={handleDayPress}
                 markedDates={markedDates}
                 markingType="dot"

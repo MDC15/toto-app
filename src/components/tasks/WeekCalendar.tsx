@@ -2,6 +2,7 @@ import {
     formatShortDate,
     getDayLabel,
     getDayNumber,
+    getDateString,
     getNow,
     getStartOfWeek,
     getWeekDays,
@@ -27,25 +28,33 @@ interface WeekCalendarProps {
 }
 
 export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalendarProps) {
-    const WEEK_WIDTH = 300; // chiều rộng mỗi tuần để scroll mượt
+    const WEEK_WIDTH = 300;
     const scrollViewRef = useRef<ScrollView>(null);
     const [showCalendar, setShowCalendar] = useState(false);
-    const [weekOffset, setWeekOffset] = useState(0); // offset tuần so với hiện tại
+    const [currentTime, setCurrentTime] = useState(getNow());
+    const [calendarCurrentMonth, setCalendarCurrentMonth] = useState(getNow());
+    const [weekOffset, setWeekOffset] = useState(0);
     const baseWeekStart = useMemo(() => getStartOfWeek(getNow()), []);
 
-    /** Đồng bộ tuần mỗi khi chọn ngày mới */
+    /** Cập nhật thời gian thực mỗi phút */
     useEffect(() => {
-        const nowWeek = getStartOfWeek(getNow());
+        const interval = setInterval(() => setCurrentTime(getNow()), 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    /** Khi selectedDate thay đổi → cuộn và cập nhật tuần, tháng */
+    useEffect(() => {
+        const nowWeek = getStartOfWeek(currentTime);
         const selectedWeek = getStartOfWeek(selectedDate);
         const diffWeeks =
             Math.round(
-                (selectedWeek.getTime() - nowWeek.getTime()) /
-                (7 * 24 * 3600 * 1000)
+                (selectedWeek.getTime() - nowWeek.getTime()) / (7 * 24 * 3600 * 1000)
             );
         setWeekOffset(diffWeeks);
-    }, [selectedDate]);
+        setCalendarCurrentMonth(selectedDate);
+    }, [selectedDate, currentTime]);
 
-    /** Cuộn đến tuần tương ứng */
+    /** Cuộn đến tuần tương ứng khi weekOffset thay đổi */
     useEffect(() => {
         requestAnimationFrame(() => {
             scrollViewRef.current?.scrollTo({
@@ -55,7 +64,7 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
         });
     }, [weekOffset]);
 
-    /** Sinh danh sách tuần (40 tuần = 20 trước + 20 sau) */
+    /** Tạo danh sách tuần */
     const weeks = useMemo(() => {
         const arr: Date[] = [];
         const start = new Date(baseWeekStart);
@@ -67,29 +76,33 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
         return arr;
     }, [baseWeekStart]);
 
-    /** Khi cuộn xong, cập nhật offset tuần mới */
+    /** Khi scroll kết thúc → cập nhật tuần hiện tại */
     const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const offsetX = event.nativeEvent.contentOffset.x;
         const index = Math.round(offsetX / WEEK_WIDTH);
-        const newOffset = index - 20; // 20 tuần trước là mốc 0
-        setWeekOffset(newOffset);
+        setWeekOffset(index - 20);
     };
 
     /** Chọn ngày trong tuần */
     const handleDaySelect = (day: Date) => {
-        onSelectDate(day);
+        // Normalize date to remove time components for consistent behavior
+        const normalizedDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+        onSelectDate(normalizedDate);
+        setCalendarCurrentMonth(normalizedDate);
     };
 
-    /** Chọn ngày trong modal lịch */
+    /** Chọn ngày trong calendar modal */
     const handleCalendarDayPress = (day: DateData) => {
         const newDate = new Date(day.timestamp);
-        onSelectDate(newDate);
-        const selectedWeek = getStartOfWeek(newDate);
-        const nowWeek = getStartOfWeek(getNow());
+        // Normalize date to remove time components for consistent behavior
+        const normalizedDate = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+        onSelectDate(normalizedDate);
+        setCalendarCurrentMonth(normalizedDate);
+        const selectedWeek = getStartOfWeek(normalizedDate);
+        const nowWeek = getStartOfWeek(currentTime);
         const diffWeeks =
             Math.round(
-                (selectedWeek.getTime() - nowWeek.getTime()) /
-                (7 * 24 * 3600 * 1000)
+                (selectedWeek.getTime() - nowWeek.getTime()) / (7 * 24 * 3600 * 1000)
             );
         setWeekOffset(diffWeeks);
         setShowCalendar(false);
@@ -103,8 +116,7 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
                 <View style={styles.weekRow}>
                     {days.map((day, i) => {
                         const isSelected = isSameDay(day, selectedDate);
-                        const isToday = isSameDay(day, getNow());
-                        const isHighlighted = isSelected || isToday;
+                        const isToday = isSameDay(day, currentTime);
 
                         return (
                             <TouchableOpacity
@@ -113,14 +125,21 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
                                 activeOpacity={0.8}
                                 style={[
                                     styles.dayItem,
-                                    isSelected && styles.selectedDay,
-                                    !isSelected && isToday && styles.todayHighlight,
+                                    isSelected
+                                        ? styles.selectedDay
+                                        : isToday
+                                            ? styles.todayHighlight
+                                            : null,
                                 ]}
                             >
                                 <Text
                                     style={[
                                         styles.dayLabel,
-                                        isHighlighted && styles.highlightText,
+                                        isSelected
+                                            ? styles.selectedText
+                                            : isToday
+                                                ? styles.todayText
+                                                : null,
                                     ]}
                                 >
                                     {getDayLabel(day)}
@@ -128,7 +147,11 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
                                 <Text
                                     style={[
                                         styles.dayNumber,
-                                        isHighlighted && styles.highlightText,
+                                        isSelected
+                                            ? styles.selectedText
+                                            : isToday
+                                                ? styles.todayText
+                                                : null,
                                     ]}
                                 >
                                     {getDayNumber(day)}
@@ -145,9 +168,7 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    onPress={() => setWeekOffset((prev) => prev - 1)}
-                >
+                <TouchableOpacity onPress={() => setWeekOffset((prev) => prev - 1)}>
                     <AntDesign name="left" size={22} color="#555" />
                 </TouchableOpacity>
 
@@ -155,17 +176,17 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
                     style={styles.centerSection}
                     onPress={() => {
                         setWeekOffset(0);
-                        onSelectDate(getNow());
+                        onSelectDate(currentTime);
+                        setCalendarCurrentMonth(currentTime);
                     }}
                 >
                     <Text
                         style={[
                             styles.headerTitle,
-                            isSameDay(selectedDate, getNow()) &&
-                            styles.todaySelected,
+                            isSameDay(selectedDate, currentTime) && styles.todaySelected,
                         ]}
                     >
-                        {isSameDay(selectedDate, getNow())
+                        {isSameDay(selectedDate, currentTime)
                             ? 'Today'
                             : formatShortDate(selectedDate)}
                     </Text>
@@ -178,9 +199,7 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
                     <Ionicons name="calendar-outline" size={22} color="#111" />
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={() => setWeekOffset((prev) => prev + 1)}
-                >
+                <TouchableOpacity onPress={() => setWeekOffset((prev) => prev + 1)}>
                     <AntDesign name="right" size={22} color="#555" />
                 </TouchableOpacity>
             </View>
@@ -210,10 +229,10 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
                 >
                     <View style={styles.modalContent}>
                         <Calendar
-                            current={selectedDate.toISOString().split('T')[0]}
+                            current={getDateString(calendarCurrentMonth)}
                             onDayPress={handleCalendarDayPress}
                             markedDates={{
-                                [selectedDate.toISOString().split('T')[0]]: {
+                                [getDateString(selectedDate)]: {
                                     selected: true,
                                     selectedColor: '#f97316',
                                     selectedTextColor: '#fff',
@@ -223,6 +242,8 @@ export default function WeekCalendar({ selectedDate, onSelectDate }: WeekCalenda
                                 todayTextColor: '#f97316',
                                 arrowColor: '#f97316',
                                 textSectionTitleColor: '#333',
+                                selectedDayBackgroundColor: '#f97316',
+                                selectedDayTextColor: '#fff',
                             }}
                         />
                     </View>
@@ -273,9 +294,10 @@ const styles = StyleSheet.create({
         borderColor: '#f97316',
         backgroundColor: '#fff',
     },
+    selectedText: { color: '#fff' },
+    todayText: { color: '#f97316', fontWeight: '700' },
     dayLabel: { fontSize: 12, fontWeight: '600', color: '#555' },
     dayNumber: { fontSize: 16, fontWeight: '700', color: '#444' },
-    highlightText: { color: '#fff' },
     modalOverlay: {
         flex: 1,
         justifyContent: 'center',

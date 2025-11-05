@@ -3,6 +3,7 @@ import DatePicker from '@/components/common/DatePicker';
 import ReminderSelector from '@/components/common/ReminderSelector';
 import ColorPick from '@/components/habits/ColorPick';
 import { getHabits, updateHabit } from '@/db/database';
+import { getDateString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
@@ -34,6 +35,22 @@ export default function EditHabit() {
     const [alertMessage, setAlertMessage] = useState('');
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
+    // Helper function to parse habit date (handles both old and new formats)
+    const parseHabitDate = (dateString: string): Date => {
+        try {
+            // Try to parse as YYYY-MM-DD format first (new format)
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                const [year, month, day] = dateString.split('-').map(Number);
+                return new Date(year, month - 1, day);
+            }
+            // Fallback to standard Date parsing for other formats
+            return new Date(dateString);
+        } catch (error) {
+            console.warn('Error parsing date:', dateString, error);
+            return new Date(); // Return current date as fallback
+        }
+    };
+
     useEffect(() => {
         const loadHabit = async () => {
             try {
@@ -48,8 +65,8 @@ export default function EditHabit() {
                     const reminderEnabled = habit.reminder !== null && habit.reminder !== undefined && habit.reminder !== '';
                     setReminderEnabled(reminderEnabled);
                     setReminderTime(habit.reminder || '15 minutes before');
-                    setStartDate(habit.start_date ? new Date(habit.start_date) : new Date());
-                    setEndDate(habit.end_date ? new Date(habit.end_date) : null);
+                    setStartDate(habit.start_date ? parseHabitDate(habit.start_date) : new Date());
+                    setEndDate(habit.end_date ? parseHabitDate(habit.end_date) : null);
                 }
             } catch (error) {
                 console.error('Error loading habit:', error);
@@ -95,7 +112,7 @@ export default function EditHabit() {
             try {
                 const reminderValue = reminderEnabled ? reminderTime : undefined;
                 console.log('EditHabit: Updating habit with reminder:', reminderValue);
-                await updateHabit(parseInt(id as string), habitName, description, frequency, targetCount, 0, selectedColor, reminderValue, startDate.toISOString().split('T')[0], endDate ? endDate.toISOString().split('T')[0] : undefined, undefined, false);
+                await updateHabit(parseInt(id as string), habitName, description, frequency, targetCount, 0, selectedColor, reminderValue, getDateString(startDate), endDate ? getDateString(endDate) : undefined, undefined, false);
                 console.log('EditHabit: Habit updated successfully');
                 router.back();
             } catch (error) {

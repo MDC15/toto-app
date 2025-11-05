@@ -4,6 +4,23 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+// 🗓️ Helper: Định dạng ngày dễ đọc hơn
+const formatReadableDate = (dateString?: string): string => {
+    if (!dateString) return '—';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Invalid date';
+        // Hiển thị kiểu “November 5, 2025”
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+    } catch {
+        return 'Invalid date';
+    }
+};
+
 export default function ViewHabit() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
@@ -15,32 +32,27 @@ export default function ViewHabit() {
             try {
                 const habits = await getHabits();
                 const foundHabit = habits.find((h: any) => h.id === parseInt(id as string));
-                if (foundHabit) {
-                    setHabit(foundHabit);
-                }
+                setHabit(foundHabit || null);
             } catch (error) {
                 console.error('Error loading habit:', error);
             } finally {
                 setLoading(false);
             }
         };
-
-        if (id) {
-            loadHabit();
-        }
+        if (id) loadHabit();
     }, [id]);
 
     const handleEdit = () => {
-        router.push({ pathname: '/pages/edithabit', params: { id: habit.id } });
+        if (habit) router.push({ pathname: '/pages/edithabit', params: { id: habit.id } });
     };
 
-    const getFrequencyText = () => {
-        if (!habit.frequency) return 'Daily';
-        const freq = habit.frequency.toLowerCase();
-        if (freq.includes('daily')) return 'Daily';
-        if (freq.includes('weekly')) return 'Weekly';
-        if (freq.includes('monthly')) return 'Monthly';
-        return habit.frequency;
+    const getFrequencyText = (freq?: string) => {
+        if (!freq) return 'Daily';
+        const f = freq.toLowerCase();
+        if (f.includes('daily')) return 'Daily';
+        if (f.includes('weekly')) return 'Weekly';
+        if (f.includes('monthly')) return 'Monthly';
+        return freq;
     };
 
     if (loading) {
@@ -64,44 +76,47 @@ export default function ViewHabit() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-            {/* Main Habit Info */}
+            {/* Thông tin chính */}
             <View style={[styles.mainCard, { borderLeftColor: habit.color, borderLeftWidth: 4 }]}>
                 <View style={styles.headerRow}>
                     <Text style={[styles.title, { color: habit.color }]}>{habit.title}</Text>
                     <View style={[styles.colorIndicator, { backgroundColor: habit.color }]} />
                 </View>
 
-                {habit.description && (
+                {habit.description ? (
                     <Text style={styles.description}>{habit.description}</Text>
-                )}
+                ) : null}
 
                 <View style={styles.dateRow}>
                     <Text style={styles.dateText}>
-                        {habit.start_date ? new Date(habit.start_date).toLocaleDateString() : 'No start date'}
-                        {habit.end_date && ` - ${new Date(habit.end_date).toLocaleDateString()}`}
+                        {formatReadableDate(habit.start_date)}
+                        {habit.end_date ? ` — ${formatReadableDate(habit.end_date)}` : ''}
                     </Text>
                 </View>
             </View>
 
-            {/* Essential Details */}
+            {/* Chi tiết */}
             <View style={styles.detailsCard}>
                 <Text style={styles.sectionTitle}>Details</Text>
 
                 <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Frequency</Text>
-                    <Text style={styles.detailValue}>{getFrequencyText()}</Text>
+                    <Text style={styles.detailValue}>{getFrequencyText(habit.frequency)}</Text>
                 </View>
 
-                {habit.reminder && (
+                {habit.reminder ? (
                     <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Reminder</Text>
                         <Text style={styles.detailValue}>{habit.reminder}</Text>
                     </View>
-                )}
+                ) : null}
             </View>
 
-            {/* Action Button */}
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: habit.color }]} onPress={handleEdit}>
+            {/* Nút hành động */}
+            <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: habit.color }]}
+                onPress={handleEdit}
+            >
                 <Ionicons name="create-outline" size={20} color="#fff" />
                 <Text style={styles.actionButtonText}>Edit Habit</Text>
             </TouchableOpacity>

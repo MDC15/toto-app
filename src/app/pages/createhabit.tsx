@@ -3,6 +3,7 @@ import DatePicker from '@/components/common/DatePicker';
 import ReminderSelector from '@/components/common/ReminderSelector';
 import ColorPick from '@/components/habits/ColorPick';
 import { addHabit } from '@/db/database';
+import { getDateString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from "expo-router";
 import React, { useState } from 'react';
@@ -135,8 +136,8 @@ export default function CreateHabit() {
                 'daily', // Default frequency
                 1, // Default target count
                 selectedColor,
-                startDate.toISOString().split('T')[0],
-                endDate ? endDate.toISOString().split('T')[0] : undefined,
+                getDateString(startDate),
+                endDate ? getDateString(endDate) : undefined,
                 reminderEnabled ? reminderTime : undefined,
                 false
             );

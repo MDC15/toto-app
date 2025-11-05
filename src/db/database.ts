@@ -1,7 +1,46 @@
 import * as SQLite from 'expo-sqlite';
+import { getDateString } from '@/utils/dateUtils';
 
 // Mở database đồng bộ
 const db = SQLite.openDatabaseSync('todolist.db');
+
+// ==========================
+// 📅 DATE UTILITIES
+// ==========================
+/**
+ * Helper function to parse habit date (handles both old and new formats)
+ */
+export const parseHabitDate = (dateString: string): Date => {
+    try {
+        // Try to parse as YYYY-MM-DD format first (new format)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+        // Fallback to standard Date parsing for other formats
+        return new Date(dateString);
+    } catch (error) {
+        console.warn('Error parsing date:', dateString, error);
+        return new Date(); // Return current date as fallback
+    }
+};
+
+/**
+ * Check if a date string is in the completed dates array (handles both old and new formats)
+ */
+export const isDateInCompletedDates = (completedDates: string[], targetDate: string): boolean => {
+    try {
+        // Normalize date strings to YYYY-MM-DD format for comparison
+        const normalizedTarget = targetDate.match(/^\d{4}-\d{2}-\d{2}$/)
+            ? targetDate
+            : getDateString(parseHabitDate(targetDate));
+        
+        return completedDates.includes(normalizedTarget);
+    } catch (error) {
+        console.warn('Error checking habit completion:', error);
+        return false;
+    }
+};
 
 // ==========================
 // 🏗️ Khởi tạo Database
@@ -288,16 +327,21 @@ export const markHabitCompletedForDate = (id: number, date: string): void => {
 
         const completedDates = JSON.parse(habit.completed_dates || '[]');
 
+        // Normalize the date to YYYY-MM-DD format for consistent storage
+        const normalizedDate = date.match(/^\d{4}-\d{2}-\d{2}$/)
+            ? date
+            : getDateString(parseHabitDate(date));
+
         // Add date if not already completed
-        if (!completedDates.includes(date)) {
-            completedDates.push(date);
+        if (!completedDates.includes(normalizedDate)) {
+            completedDates.push(normalizedDate);
             db.runSync(
                 `UPDATE habits SET completed_dates = ? WHERE id = ?;`,
                 [JSON.stringify(completedDates), id]
             );
-            console.log(`✅ Habit ${id} marked completed for ${date}`);
+            console.log(`✅ Habit ${id} marked completed for ${normalizedDate}`);
         } else {
-            console.log(`ℹ️ Habit ${id} already completed for ${date}`);
+            console.log(`ℹ️ Habit ${id} already completed for ${normalizedDate}`);
         }
     } catch (error) {
         console.error('❌ Error marking habit completed for date:', error);
@@ -311,7 +355,7 @@ export const isHabitCompletedForDate = (id: number, date: string): boolean => {
         if (!habit) return false;
 
         const completedDates = JSON.parse(habit.completed_dates || '[]');
-        return completedDates.includes(date);
+        return isDateInCompletedDates(completedDates, date);
     } catch (error) {
         console.error('❌ Error checking habit completion for date:', error);
         return false;
