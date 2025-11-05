@@ -1,28 +1,36 @@
-import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState } from "react";
+import {
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
-interface NameInputModalProps {
+type NameInputModalProps = {
     visible: boolean;
     onConfirm: (name: string) => void;
     onCancel: () => void;
-}
+};
 
-const NameInputModal: React.FC<NameInputModalProps> = ({
+export default function NameInputModal({
     visible,
     onConfirm,
     onCancel,
-}) => {
-    const [name, setName] = useState('');
+}: NameInputModalProps) {
+    const [name, setName] = useState("");
 
     const handleConfirm = () => {
-        if (name.trim()) {
-            onConfirm(name.trim());
-            setName('');
+        const trimmed = name.trim();
+        if (trimmed) {
+            onConfirm(trimmed);
+            setName("");
         }
     };
 
     const handleCancel = () => {
-        setName('');
+        setName("");
         onCancel();
     };
 
@@ -35,8 +43,11 @@ const NameInputModal: React.FC<NameInputModalProps> = ({
         >
             <View style={styles.overlay}>
                 <View style={styles.card}>
-                    <Text style={styles.title}>What&#39;s your name? 🌸</Text>
-                    <Text style={styles.subtitle}>Let&#39;s make this app personal!</Text>
+                    <Text style={styles.title}>What&apos;s your name?</Text>
+                    <Text style={styles.subtitle}>
+                        Let&apos;s make this app personal!
+                    </Text>
+
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your name"
@@ -45,12 +56,20 @@ const NameInputModal: React.FC<NameInputModalProps> = ({
                         maxLength={20}
                         autoFocus
                     />
+
                     <View style={styles.buttonRow}>
-                        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                        <TouchableOpacity
+                            style={styles.cancelButton}
+                            onPress={handleCancel}
+                        >
                             <Text style={styles.cancelText}>Skip</Text>
                         </TouchableOpacity>
+
                         <TouchableOpacity
-                            style={[styles.confirmButton, { opacity: name.trim() ? 1 : 0.5 }]}
+                            style={[
+                                styles.confirmButton,
+                                { opacity: name.trim() ? 1 : 0.5 },
+                            ]}
                             onPress={handleConfirm}
                             disabled={!name.trim()}
                         >
@@ -61,25 +80,23 @@ const NameInputModal: React.FC<NameInputModalProps> = ({
             </View>
         </Modal>
     );
-};
-
-export default NameInputModal;
+}
 
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: "rgba(0,0,0,0.3)",
+        justifyContent: "center",
+        alignItems: "center",
     },
     card: {
         width: 320,
-        backgroundColor: '#fff',
+        backgroundColor: "#fff",
         borderRadius: 20,
         paddingVertical: 28,
         paddingHorizontal: 20,
-        alignItems: 'center',
-        shadowColor: '#000',
+        alignItems: "center",
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -87,56 +104,57 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 24,
-        fontWeight: '700',
-        color: '#E96479',
+        fontWeight: "700",
+        color: "#FF8C42", // primary cam
         marginBottom: 8,
-        textAlign: 'center',
+        textAlign: "center",
     },
     subtitle: {
         fontSize: 16,
-        color: '#666',
+        color: "#777",
         marginBottom: 20,
-        textAlign: 'center',
+        textAlign: "center",
     },
     input: {
-        width: '100%',
+        width: "100%",
         height: 50,
         borderWidth: 2,
-        borderColor: '#F5B971',
+        borderColor: "#E8A06B", // viền cam nhẹ
         borderRadius: 12,
         paddingHorizontal: 16,
         fontSize: 18,
-        backgroundColor: '#FFF8F0',
+        backgroundColor: "#FFF6F0", // nền input nhạt cam
+        color: "#333",
         marginBottom: 20,
     },
     buttonRow: {
-        flexDirection: 'row',
+        flexDirection: "row",
         gap: 12,
     },
     cancelButton: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: "#F3F4F6",
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 12,
         flex: 1,
-        alignItems: 'center',
+        alignItems: "center",
     },
     confirmButton: {
-        backgroundColor: '#E96479',
+        backgroundColor: "#fd9b1bff", // primary cam
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 12,
         flex: 1,
-        alignItems: 'center',
+        alignItems: "center",
     },
     cancelText: {
-        color: '#6B7280',
-        fontWeight: '600',
+        color: "#6B7280",
+        fontWeight: "600",
         fontSize: 16,
     },
     confirmText: {
-        color: '#fff',
-        fontWeight: '600',
+        color: "#fff",
+        fontWeight: "800",
         fontSize: 16,
     },
 });

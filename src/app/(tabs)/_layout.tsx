@@ -3,12 +3,11 @@ import { Colors, responsive } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { router, Tabs, useNavigation } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import React from 'react';
 import { TouchableOpacity } from 'react-native';
 
 export default function TabsLayout() {
-  const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const inactiveColor = isDark ? '#E5E5E5' : '#1C1C1C';
@@ -23,11 +22,8 @@ export default function TabsLayout() {
       }}
       activeOpacity={0.7}
       onPress={() => {
-        if (navigation.canGoBack()) {
-          navigation.goBack();
-        } else {
-          router.push('/(tabs)');
-        }
+        // Navigate to the home tab (index) as default back action
+        router.navigate('/');
       }}
     >
       <AntDesign name="left" size={responsive.fontSize(24)} color={isDark ? '#FFF' : '#171a1f'} />
@@ -58,8 +54,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: isDark ? '#1A1A1A' : '#FFF',
           borderTopColor: isDark ? '#333' : '#ddd',
-          height: responsive.height(8), // Responsive tab bar height
-          paddingBottom: responsive.spacing(5),
+          height: responsive.height(12), // Responsive tab bar height
+          paddingBottom: responsive.spacing(8),
           paddingTop: responsive.spacing(5),
         },
         tabBarButton: HapticTab,

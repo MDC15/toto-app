@@ -54,6 +54,8 @@ export const initDatabase = (): void => {
             addColumnIfNotExists('habits', 'start_date', 'TEXT');
             addColumnIfNotExists('habits', 'end_date', 'TEXT');
             addColumnIfNotExists('habits', 'reminder', 'TEXT');
+            addColumnIfNotExists('habits', 'completed_dates', 'TEXT'); // JSON array of completed dates
+            addColumnIfNotExists('habits', 'allow_multiple_per_day', 'INTEGER DEFAULT 0');
         });
 
         if (!(global as any).dbInitialized) {
@@ -198,11 +200,11 @@ export const deleteEvent = (id: number): void => {
 // ==========================
 // 🏃 HABITS FUNCTIONS
 // ==========================
-export const addHabit = (title: string, description: string, frequency: string, targetCount: number, color?: string, startDate?: string, endDate?: string, reminder?: string): void => {
+export const addHabit = (title: string, description: string, frequency: string, targetCount: number, color?: string, startDate?: string, endDate?: string, reminder?: string, allowMultiplePerDay?: boolean): void => {
     try {
         db.runSync(
-            `INSERT INTO habits (title, description, frequency, target_count, current_count, color, start_date, end_date, reminder) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?);`,
-            [title, description, frequency, targetCount, color || null, startDate || null, endDate || null, reminder || null]
+            `INSERT INTO habits (title, description, frequency, target_count, current_count, color, start_date, end_date, reminder, completed_dates, allow_multiple_per_day) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?);`,
+            [title, description, frequency, targetCount, color || null, startDate || null, endDate || null, reminder || null, '[]', allowMultiplePerDay ? 1 : 0]
         );
         console.log('✅ Habit added successfully');
     } catch (error) {
@@ -229,13 +231,22 @@ export const updateHabit = (
     targetCount: number,
     currentCount: number,
     color?: string,
-    reminder?: string
+    reminder?: string,
+    startDate?: string,
+    endDate?: string,
+    completedDates?: string,
+    allowMultiplePerDay?: boolean
 ): void => {
     try {
-        db.runSync(
-            `UPDATE habits SET title = ?, description = ?, frequency = ?, target_count = ?, current_count = ?, color = ?, reminder = ? WHERE id = ?;`,
-            [title, description, frequency, targetCount, currentCount, color || null, reminder || null, id]
-        );
+        const params = completedDates !== undefined
+            ? [title, description, frequency, targetCount, currentCount, color || null, reminder || null, startDate || null, endDate || null, completedDates, allowMultiplePerDay ? 1 : 0, id]
+            : [title, description, frequency, targetCount, currentCount, color || null, reminder || null, startDate || null, endDate || null, allowMultiplePerDay ? 1 : 0, id];
+
+        const query = completedDates !== undefined
+            ? `UPDATE habits SET title = ?, description = ?, frequency = ?, target_count = ?, current_count = ?, color = ?, reminder = ?, start_date = ?, end_date = ?, completed_dates = ?, allow_multiple_per_day = ? WHERE id = ?;`
+            : `UPDATE habits SET title = ?, description = ?, frequency = ?, target_count = ?, current_count = ?, color = ?, reminder = ?, start_date = ?, end_date = ?, allow_multiple_per_day = ? WHERE id = ?;`;
+
+        db.runSync(query, params);
         console.log(`✅ Habit ${id} updated`);
     } catch (error) {
         console.error('❌ Error updating habit:', error);
@@ -263,6 +274,47 @@ export const resetHabitProgress = (id: number): void => {
     } catch (error) {
         console.error('❌ Error resetting habit progress:', error);
         throw error;
+    }
+};
+
+export const markHabitCompletedForDate = (id: number, date: string): void => {
+    try {
+        // Get current completed_dates
+        const habit = db.getFirstSync(`SELECT completed_dates FROM habits WHERE id = ?;`, [id]) as any;
+        if (!habit) {
+            console.error(`❌ Habit with id ${id} not found in database`);
+            return; // Don't throw error, just return silently
+        }
+
+        const completedDates = JSON.parse(habit.completed_dates || '[]');
+
+        // Add date if not already completed
+        if (!completedDates.includes(date)) {
+            completedDates.push(date);
+            db.runSync(
+                `UPDATE habits SET completed_dates = ? WHERE id = ?;`,
+                [JSON.stringify(completedDates), id]
+            );
+            console.log(`✅ Habit ${id} marked completed for ${date}`);
+        } else {
+            console.log(`ℹ️ Habit ${id} already completed for ${date}`);
+        }
+    } catch (error) {
+        console.error('❌ Error marking habit completed for date:', error);
+        // Don't throw error to prevent UI crashes
+    }
+};
+
+export const isHabitCompletedForDate = (id: number, date: string): boolean => {
+    try {
+        const habit = db.getFirstSync(`SELECT completed_dates FROM habits WHERE id = ?;`, [id]) as any;
+        if (!habit) return false;
+
+        const completedDates = JSON.parse(habit.completed_dates || '[]');
+        return completedDates.includes(date);
+    } catch (error) {
+        console.error('❌ Error checking habit completion for date:', error);
+        return false;
     }
 };
 

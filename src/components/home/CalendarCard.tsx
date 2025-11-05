@@ -27,19 +27,23 @@ const TODAY_STRING = TODAY.toISOString().split('T')[0];
 
 interface CalendarCardProps {
     onDateSelect?: (date: Date) => void;
+    onDateNavigate?: (date: Date) => void;
 }
 
-export default function CalendarCard({ onDateSelect }: CalendarCardProps) {
+export default function CalendarCard({ onDateSelect, onDateNavigate }: CalendarCardProps) {
     const [selectedDate, setSelectedDate] = useState(TODAY_STRING);
     const [currentDate, setCurrentDate] = useState<Date>(TODAY);
     const [showDatePicker, setShowDatePicker] = useState(false);
 
-    const handleDayPress = (day: DateData) => {
+const handleDayPress = (day: DateData) => {
         const newDate = new Date(day.dateString);
         setSelectedDate(day.dateString);
         setCurrentDate(newDate);
         if (onDateSelect) {
             onDateSelect(newDate);
+        }
+        if (onDateNavigate) {
+            onDateNavigate(newDate);
         }
     };
 
@@ -50,6 +54,9 @@ export default function CalendarCard({ onDateSelect }: CalendarCardProps) {
             setSelectedDate(newDate.toISOString().split('T')[0]);
             if (onDateSelect) {
                 onDateSelect(newDate);
+            }
+            if (onDateNavigate) {
+                onDateNavigate(newDate);
             }
         }
     };

@@ -95,7 +95,15 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
         >
             <GreetingCard username={userName || 'User'} />
-            <CalendarCard onDateSelect={setSelectedDate} />
+            <CalendarCard
+                onDateSelect={setSelectedDate}
+                onDateNavigate={(date) => {
+                    router.push({
+                        pathname: "/(tabs)/events",
+                        params: { selectedDate: date.toISOString() }
+                    });
+                }}
+            />
             <TaskSection
                 title={`${selectedDateString === todayString ? 'Today\'s' : 'Selected Date'} Tasks`}
                 items={selectedTasks}

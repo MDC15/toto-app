@@ -3,7 +3,7 @@ import PrioritySelector from "@/components/tasks/PrioritySelector";
 import { useTasks } from "@/contexts/TasksContext";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
     Keyboard,
@@ -21,7 +21,6 @@ import {
 } from "react-native";
 
 export default function AddTaskScreen() {
-    const router = useRouter();
     const navigation = useNavigation();
     const { addTask } = useTasks();
     const params = useLocalSearchParams();
@@ -33,6 +32,15 @@ export default function AddTaskScreen() {
     const [priority, setPriority] = useState<"High" | "Medium" | "Low" | undefined>();
     const [reminderEnabled, setReminderEnabled] = useState(params.reminder === "true");
     const [reminderTime, setReminderTime] = useState("15 minutes before");
+    const [isCreatingTask, setIsCreatingTask] = useState(false);
+
+    // Track initial state for change detection
+    const initialDeadline = useRef(new Date());
+    const initialReminderEnabled = useRef(params.reminder === "true");
+    const initialReminderTime = useRef("15 minutes before");
+    const initialTitle = useRef(params.title as string || "");
+    const initialDescription = useRef(params.description as string || "");
+    const initialPriority = useRef<"High" | "Medium" | "Low" | undefined>(undefined);
 
     // ⏰ Picker states
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -54,7 +62,22 @@ export default function AddTaskScreen() {
     // Handle hardware back button
     useEffect(() => {
         const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-            const hasUnsavedChanges = title.trim() || description.trim() || priority;
+            // Don't show unsaved changes warning if task creation is in progress
+            if (isCreatingTask) {
+                return;
+            }
+
+            // Check for changes across all form fields
+            const hasDeadlineChanged = deadline.getTime() !== initialDeadline.current.getTime();
+            const hasReminderEnabledChanged = reminderEnabled !== initialReminderEnabled.current;
+            const hasReminderTimeChanged = reminderTime !== initialReminderTime.current;
+            const hasTitleChanged = title.trim() !== initialTitle.current;
+            const hasDescriptionChanged = description.trim() !== initialDescription.current;
+            const hasPriorityChanged = priority !== initialPriority.current;
+
+            const hasUnsavedChanges = hasTitleChanged || hasDescriptionChanged || hasPriorityChanged ||
+                hasDeadlineChanged || hasReminderEnabledChanged || hasReminderTimeChanged;
+
             if (!hasUnsavedChanges) {
                 return;
             }
@@ -67,10 +90,11 @@ export default function AddTaskScreen() {
         });
 
         return unsubscribe;
-    }, [navigation, title, description, priority]);
+    }, [navigation, title, description, priority, deadline, reminderEnabled, reminderTime, isCreatingTask]);
 
     // ⏳ Reminder options
     const reminderOptions = [
+        "1 minute before",
         "5 minutes before",
         "15 minutes before",
         "30 minutes before",
@@ -130,12 +154,17 @@ export default function AddTaskScreen() {
     const handleAddTask = () => {
         Keyboard.dismiss();
 
+        // Set creating task state to prevent hardware back button conflicts
+        setIsCreatingTask(true);
+
         // Validation
         if (!title.trim()) {
+            setIsCreatingTask(false);
             showAlert('warning', 'Missing Title', 'Please enter a task title.');
             return;
         }
         if (!priority) {
+            setIsCreatingTask(false);
             showAlert('warning', 'Select Priority', 'Please choose a priority for your task.');
             return;
         }
@@ -150,8 +179,29 @@ export default function AddTaskScreen() {
             due: undefined
         });
 
-        // Show success alert
-        showAlert('success', 'Success', 'Task created successfully!', () => router.back(), undefined, '', 'OK');
+        // Update initial state to current state to prevent future unsaved changes warnings
+        initialTitle.current = title;
+        initialDescription.current = description;
+        initialDeadline.current = new Date(deadline);
+        initialPriority.current = priority;
+        initialReminderEnabled.current = reminderEnabled;
+        initialReminderTime.current = reminderTime;
+
+        // Create a function to clear form and close modal
+        const clearFormAndClose = () => {
+            // Clear form fields after successful creation
+            setTitle('');
+            setDescription('');
+            setPriority(undefined);
+            setReminderEnabled(initialReminderEnabled.current);
+            setReminderTime(initialReminderTime.current);
+            setDeadline(new Date());
+            setIsCreatingTask(false);
+            setAlertVisible(false);
+        };
+
+        // Show success alert with single OK button - no navigation and clear form
+        showAlert('success', 'Task Created', 'Task created successfully!', clearFormAndClose, clearFormAndClose, '', 'OK');
     };
 
     // Handle back button press

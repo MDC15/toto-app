@@ -19,12 +19,6 @@ const pages = [
         title: 'Effective work management',
         subtitle: 'Add, edit, and delete jobs quickly.',
     },
-    {
-        id: '3',
-        image: require('../../../assets/images/inapp/Onboarding.png'),
-        title: 'Never miss a thing',
-        subtitle: 'Set reminders and priorities to stay on track.',
-    },
 ];
 
 export default function OnboardingScreen() {
@@ -52,12 +46,12 @@ export default function OnboardingScreen() {
         if (currentPage < pages.length - 1) {
             pagerRef.current?.setPage(currentPage + 1);
         } else {
-            router.replace('/(tabs)');
+            router.replace('/pages/permission'); // ✅ sang trang xin quyền
         }
     };
 
     const handleSkip = () => {
-        router.replace('/(tabs)');
+        router.replace('/pages/permission'); // ✅ bỏ qua luôn onboarding
     };
 
     const isLastPage = currentPage === pages.length - 1;

@@ -1,30 +1,28 @@
 import AlertModal from '@/components/common/AlertModal';
+import ColorPick from '@/components/habits/ColorPick';
 import DatePicker from '@/components/common/DatePicker';
 import ReminderSelector from '@/components/common/ReminderSelector';
 import { addHabit } from '@/db/database';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-const colors = [
-    '#fed7aa', '#fecaca', '#d1fae5', '#dbeafe', '#e9d5ff',
-    '#fef3c7', '#fce7f3', '#cffafe', '#ecfccb',
-];
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function CreateHabit() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const [habitName, setHabitName] = useState(params.title as string || '');
     const [description, setDescription] = useState(params.description as string || '');
-    const [frequency, setFrequency] = useState('daily');
-    const [targetCount, setTargetCount] = useState('1');
-    const [selectedColor, setSelectedColor] = useState('#fed7aa');
-    const [reminderEnabled, setReminderEnabled] = useState(false);
+    const [selectedColor, setSelectedColor] = useState('#ea580c');
+    const [reminderEnabled, setReminderEnabled] = useState(() => params.reminder === "true");
     const [reminderTime, setReminderTime] = useState('15 minutes before');
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState<Date | null>(null);
-    const [showTargetInput, setShowTargetInput] = useState(false);
+
+    // Diagnostic logging for reminder state
+    React.useEffect(() => {
+        console.log('CreateHabit: Reminder state - enabled:', reminderEnabled, 'time:', reminderTime);
+    }, [reminderEnabled, reminderTime]);
 
     // Alert modal states
     const [alertVisible, setAlertVisible] = useState(false);
@@ -55,75 +53,14 @@ export default function CreateHabit() {
                 textAlignVertical="top"
             />
 
-            {/* Frequency */}
-            <Text style={styles.label}>Frequency</Text>
-            <View style={styles.frequencyRow}>
-                {['daily', 'weekly', 'monthly'].map((freq) => (
-                    <TouchableOpacity
-                        key={freq}
-                        style={[styles.frequencyOption, frequency === freq && styles.frequencySelected]}
-                        onPress={() => setFrequency(freq)}
-                    >
-                        <Text style={[styles.frequencyText, frequency === freq && styles.frequencyTextSelected]}>
-                            {freq.charAt(0).toUpperCase() + freq.slice(1)}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            {/* Target Count */}
-            <Text style={styles.label}>Target Count</Text>
-            <View style={styles.counterRow}>
-                <TouchableOpacity
-                    style={styles.counterButton}
-                    onPress={() => {
-                        const num = parseInt(targetCount);
-                        if (!isNaN(num) && num > 1) {
-                            setTargetCount((num - 1).toString());
-                        }
-                    }}
-                >
-                    <Text style={styles.counterButtonText}>-</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.counterTextContainer}
-                    onPress={() => setShowTargetInput(true)}
-                >
-                    <Text style={styles.counterText}>{targetCount}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.counterButton}
-                    onPress={() => {
-                        const num = parseInt(targetCount);
-                        if (!isNaN(num)) {
-                            setTargetCount((num + 1).toString());
-                        }
-                    }}
-                >
-                    <Text style={styles.counterButtonText}>+</Text>
-                </TouchableOpacity>
-            </View>
-
             {/* Color Picker */}
-            <Text style={styles.label}>Color</Text>
-            <View style={styles.colorRow}>
-                {colors.map((c, i) => (
-                    <TouchableOpacity
-                        key={i}
-                        style={[
-                            styles.colorDot,
-                            { backgroundColor: c },
-                            selectedColor === c && styles.selectedDot,
-                        ]}
-                        onPress={() => setSelectedColor(c)}
-                    />
-                ))}
-            </View>
+            <ColorPick
+                selectedColor={selectedColor}
+                onColorSelect={setSelectedColor}
+            />
 
             {/* Options Card */}
             <View style={styles.optionsCard}>
-                <Text style={styles.sectionTitle}>Additional Settings</Text>
-
                 <View style={styles.optionRow}>
                     <Ionicons name="repeat" size={20} color="#E16A00" />
                     <Text style={styles.optionText}>Repeat</Text>
@@ -138,7 +75,7 @@ export default function CreateHabit() {
                     />
 
                     <DatePicker
-                        label="End Date (Optional)"
+                        label="End Date"
                         date={endDate}
                         onChange={setEndDate}
                         placeholder="Select end date"
@@ -168,51 +105,6 @@ export default function CreateHabit() {
                 onCancel={() => setAlertVisible(false)}
                 onClose={() => setAlertVisible(false)}
             />
-
-            {/* Target Count Input Modal */}
-            <Modal
-                visible={showTargetInput}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowTargetInput(false)}
-            >
-                <Pressable
-                    style={styles.modalOverlay}
-                    onPress={() => setShowTargetInput(false)}
-                >
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Enter Target Count</Text>
-                        <TextInput
-                            style={styles.modalInput}
-                            value={targetCount}
-                            onChangeText={setTargetCount}
-                            keyboardType="numeric"
-                            autoFocus
-                            selectTextOnFocus
-                        />
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.cancelButton]}
-                                onPress={() => setShowTargetInput(false)}
-                            >
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.confirmButton]}
-                                onPress={() => {
-                                    const num = parseInt(targetCount);
-                                    if (isNaN(num) || num <= 0) {
-                                        setTargetCount('1');
-                                    }
-                                    setShowTargetInput(false);
-                                }}
-                            >
-                                <Text style={styles.confirmButtonText}>OK</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Pressable>
-            </Modal>
         </ScrollView>
     );
 
@@ -232,30 +124,26 @@ export default function CreateHabit() {
             return;
         }
 
-        const targetNum = parseInt(targetCount);
-        if (isNaN(targetNum) || targetNum <= 0) {
-            showAlert('warning', 'Invalid Target Count', 'Please enter a valid target count greater than 0.');
-            return;
-        }
-
-        if (endDate && startDate > endDate) {
+        if (endDate && startDate >= endDate) {
             showAlert('warning', 'Invalid Dates', 'End date must be after start date.');
             return;
         }
 
-        const createHabitAction = () => {
+        const createHabitAction = async () => {
             try {
-                addHabit(
+                await addHabit(
                     habitName,
                     description,
-                    frequency,
-                    targetNum,
+                    'daily', // Default frequency
+                    1, // Default target count
                     selectedColor,
                     startDate.toISOString().split('T')[0],
                     endDate ? endDate.toISOString().split('T')[0] : undefined,
-                    reminderEnabled ? reminderTime : undefined
+                    reminderEnabled ? reminderTime : undefined,
+                    false
                 );
-                router.back();
+                // Navigate back to habits screen to refresh the list
+                router.replace('/(tabs)/habits');
             } catch (error) {
                 console.error(error);
                 showAlert('error', 'Error', 'Could not create habit.');
@@ -295,79 +183,6 @@ const styles = StyleSheet.create({
         maxHeight: 120,
         textAlignVertical: 'top',
     },
-    frequencyRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-    },
-    frequencyOption: {
-        flex: 1,
-        paddingVertical: 12,
-        paddingHorizontal: 15,
-        borderWidth: 1,
-        borderColor: '#e1e5e9',
-        borderRadius: 10,
-        alignItems: 'center',
-        marginHorizontal: 2,
-        backgroundColor: '#fff',
-    },
-    frequencySelected: {
-        backgroundColor: '#f97316',
-        borderColor: '#f97316',
-    },
-    frequencyText: {
-        fontSize: 14,
-        color: '#666',
-    },
-    frequencyTextSelected: {
-        color: '#fff',
-    },
-    counterRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 20,
-    },
-    counterButton: {
-        width: 40,
-        height: 40,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    counterButtonText: {
-        fontSize: 20,
-        color: '#666',
-    },
-    counterText: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginHorizontal: 20,
-        minWidth: 30,
-        textAlign: 'center',
-    },
-    counterTextContainer: {
-        minWidth: 30,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    colorRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-        marginBottom: 25,
-    },
-    colorDot: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-    },
-    selectedDot: {
-        borderWidth: 2,
-        borderColor: '#333',
-    },
     optionsCard: {
         backgroundColor: '#fff',
         borderRadius: 12,
@@ -380,12 +195,6 @@ const styles = StyleSheet.create({
         marginBottom: 40,
         borderWidth: 1,
         borderColor: '#f0f0f0',
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 16,
     },
     optionRow: {
         flexDirection: 'row',
@@ -476,5 +285,8 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    checkboxContainer: {
+        marginRight: 10,
     },
 });

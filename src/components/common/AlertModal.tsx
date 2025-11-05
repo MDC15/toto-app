@@ -1,6 +1,6 @@
-import React from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type AlertType = 'warning' | 'success' | 'error' | 'info';
 
@@ -16,17 +16,19 @@ interface AlertModalProps {
     onClose?: () => void;
 }
 
-const AlertModal: React.FC<AlertModalProps> = ({
-    visible,
-    type = 'info',
-    title = 'Alert',
-    message = '',
-    cancelText = 'Cancel',
-    confirmText = 'OK',
-    onCancel,
-    onConfirm,
-    onClose,
-}) => {
+export default function AlertModal(props: AlertModalProps) {
+    const {
+        visible,
+        type = 'info',
+        title = 'Alert',
+        message = '',
+        cancelText = 'Cancel',
+        confirmText = 'OK',
+        onCancel,
+        onConfirm,
+        onClose,
+    } = props;
+
     const colors = {
         warning: '#D97706',
         success: '#16A34A',
@@ -48,8 +50,11 @@ const AlertModal: React.FC<AlertModalProps> = ({
             visible={visible}
             onRequestClose={onClose || onCancel}
         >
-            <View style={styles.overlay}>
-                <View style={styles.card}>
+            <Pressable
+                style={styles.overlay}
+                onPress={onClose || onCancel}
+            >
+                <View style={styles.card} onTouchStart={(e) => e.stopPropagation()}>
                     <View style={[styles.iconCircle, { backgroundColor: colors[type] }]}>
                         <Ionicons name={iconMap[type]} size={24} color="#fff" />
                     </View>
@@ -74,12 +79,10 @@ const AlertModal: React.FC<AlertModalProps> = ({
                         )}
                     </View>
                 </View>
-            </View>
+            </Pressable>
         </Modal>
     );
-};
-
-export default AlertModal;
+}
 
 // 💅 Styles
 const styles = StyleSheet.create({
@@ -104,9 +107,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 10,
-    },
-    iconText: {
-        fontSize: 24,
     },
     title: {
         fontWeight: '700',

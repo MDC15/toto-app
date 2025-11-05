@@ -27,6 +27,11 @@ export default function EditEventScreen() {
     const [endTime, setEndTime] = useState(new Date());
     const [reminderEnabled, setReminderEnabled] = useState(false);
     const [reminderTime, setReminderTime] = useState("5 minutes before");
+
+    // Diagnostic logging for reminder state
+    React.useEffect(() => {
+        console.log('EditEvent: Reminder state - enabled:', reminderEnabled, 'time:', reminderTime);
+    }, [reminderEnabled, reminderTime]);
     const [eventColor, setEventColor] = useState("#fed7aa");
 
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);

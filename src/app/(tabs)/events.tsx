@@ -1,6 +1,6 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useState, useEffect } from "react";
+import { Alert, ScrollView, StyleSheet, View, Text } from "react-native";
 
 // Components
 import EventCard from "@/components/events/EventCard";
@@ -21,8 +21,17 @@ const getIconForTitle = (title: string): string => {
 };
 
 export default function EventsScreen() {
+    const { selectedDate: selectedDateParam } = useLocalSearchParams<{ selectedDate?: string }>();
     const [selectedDate, setSelectedDate] = React.useState(getNow());
     const [events, setEvents] = useState<any[]>([]);
+
+    // Handle date navigation from home screen
+    useEffect(() => {
+        if (selectedDateParam) {
+            const navDate = new Date(selectedDateParam);
+            setSelectedDate(navDate);
+        }
+    }, [selectedDateParam]);
 
     const fetchEvents = async () => {
         const dbEvents = await getEvents();
@@ -107,6 +116,15 @@ export default function EventsScreen() {
                 onSelectDate={(date) => setSelectedDate(date)}
             />
 
+            {/* Date indicator when navigated from home screen */}
+            {selectedDateParam && (
+                <View style={styles.dateIndicator}>
+                    <Text style={styles.dateIndicatorText}>
+                        Viewing events for {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
+                    </Text>
+                </View>
+            )}
+
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
                     {eventsForDate.map((event) => (
@@ -137,4 +155,19 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#fff",
     },
+    dateIndicator: {
+        backgroundColor: '#f97316',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        marginHorizontal: 16,
+        borderRadius: 8,
+        marginBottom: 10,
+    },
+    dateIndicatorText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
 });
+

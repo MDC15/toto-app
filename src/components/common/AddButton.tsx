@@ -6,15 +6,13 @@ interface AddButtonProps {
     onPress: () => void;
 }
 
-const AddButton: React.FC<AddButtonProps> = ({ label, onPress }) => (
-    <TouchableOpacity style={styles.btn} onPress={onPress}>
-        <Text style={styles.text}>{label}</Text>
-    </TouchableOpacity>
-);
-
-AddButton.displayName = "AddButton";
-
-export default AddButton;
+export default function AddButton({ label, onPress }: AddButtonProps) {
+    return (
+        <TouchableOpacity style={styles.btn} onPress={onPress}>
+            <Text style={styles.text}>{label}</Text>
+        </TouchableOpacity>
+    );
+}
 
 const styles = StyleSheet.create({
     btn: {
@@ -28,6 +26,6 @@ const styles = StyleSheet.create({
     text: {
         color: "#fff",
         fontSize: 18,
-        fontWeight: "bold"
+        fontWeight: "bold",
     },
 });

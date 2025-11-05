@@ -3,9 +3,8 @@ import ReminderSelector from "@/components/common/ReminderSelector";
 import { addEvent } from "@/db/database";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useEffect, useRef, useState } from "react";
 import {
     Keyboard,
     KeyboardAvoidingView,
@@ -19,8 +18,9 @@ import {
 } from "react-native";
 
 export default function CreateEventScreen() {
-    const router = useRouter();
+    const navigation = useNavigation();
 
+    // Form field states
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [startTime, setStartTime] = useState(new Date());
@@ -28,6 +28,21 @@ export default function CreateEventScreen() {
     const [reminderEnabled, setReminderEnabled] = useState(false);
     const [reminderTime, setReminderTime] = useState("5 minutes before");
     const [eventColor, setEventColor] = useState("#fed7aa");
+    const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+
+    // Track initial state for change detection
+    const initialTitle = useRef("");
+    const initialDescription = useRef("");
+    const initialStartTime = useRef(new Date());
+    const initialEndTime = useRef(new Date());
+    const initialReminderEnabled = useRef(false);
+    const initialReminderTime = useRef("5 minutes before");
+    const initialEventColor = useRef("#fed7aa");
+
+    // Diagnostic logging for reminder state
+    React.useEffect(() => {
+        console.log('CreateEvent: Reminder state - enabled:', reminderEnabled, 'time:', reminderTime);
+    }, [reminderEnabled, reminderTime]);
 
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showStartTimePicker, setShowStartTimePicker] = useState(false);
@@ -40,6 +55,9 @@ export default function CreateEventScreen() {
     const [alertTitle, setAlertTitle] = useState('');
     const [alertMessage, setAlertMessage] = useState('');
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+    const [onCancelAction, setOnCancelAction] = useState<(() => void) | null>(null);
+    const [cancelText, setCancelText] = useState('Cancel');
+    const [confirmText, setConfirmText] = useState('OK');
 
     // Reset form when screen comes into focus
     useFocusEffect(
@@ -51,43 +69,120 @@ export default function CreateEventScreen() {
             setReminderEnabled(false);
             setReminderTime("5 minutes before");
             setEventColor("#fed7aa");
+            setIsCreatingEvent(false);
+
+            // Reset initial states to current default values
+            initialTitle.current = "";
+            initialDescription.current = "";
+            initialStartTime.current = new Date();
+            initialEndTime.current = new Date();
+            initialReminderEnabled.current = false;
+            initialReminderTime.current = "5 minutes before";
+            initialEventColor.current = "#fed7aa";
         }, [])
     );
 
+    // Handle hardware back button with change detection
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+            // Don't show unsaved changes warning if event creation is in progress
+            if (isCreatingEvent) {
+                return;
+            }
+
+            // Check for changes across all form fields
+            const hasTitleChanged = title.trim() !== initialTitle.current;
+            const hasDescriptionChanged = description.trim() !== initialDescription.current;
+            const hasStartTimeChanged = startTime.getTime() !== initialStartTime.current.getTime();
+            const hasEndTimeChanged = endTime.getTime() !== initialEndTime.current.getTime();
+            const hasReminderEnabledChanged = reminderEnabled !== initialReminderEnabled.current;
+            const hasReminderTimeChanged = reminderTime !== initialReminderTime.current;
+            const hasEventColorChanged = eventColor !== initialEventColor.current;
+
+            const hasUnsavedChanges = hasTitleChanged || hasDescriptionChanged || hasStartTimeChanged ||
+                hasEndTimeChanged || hasReminderEnabledChanged || hasReminderTimeChanged || hasEventColorChanged;
+
+            if (!hasUnsavedChanges) {
+                return;
+            }
+
+            e.preventDefault();
+
+            showAlert('warning', 'Unsaved Changes', 'You have unsaved changes. Are you sure you want to go back?', () => {
+                navigation.dispatch(e.data.action);
+            });
+        });
+
+        return unsubscribe;
+    }, [navigation, title, description, startTime, endTime, reminderEnabled, reminderTime, eventColor, isCreatingEvent]);
+
     // Helper function to show alert modal
-    const showAlert = (type: 'warning' | 'success' | 'error' | 'info', title: string, message: string, action?: () => void) => {
+    const showAlert = (
+        type: 'warning' | 'success' | 'error' | 'info',
+        title: string,
+        message: string,
+        action?: () => void,
+        cancelAction?: () => void,
+        cancelText: string = 'Cancel',
+        confirmText: string = 'OK'
+    ) => {
         setAlertType(type);
         setAlertTitle(title);
         setAlertMessage(message);
         setPendingAction(() => action || null);
+        setOnCancelAction(() => cancelAction || null);
+        setCancelText(cancelText);
+        setConfirmText(confirmText);
         setAlertVisible(true);
     };
 
     const handleAddEvent = async () => {
         Keyboard.dismiss();
 
+        // Set creating event state to prevent hardware back button conflicts
+        setIsCreatingEvent(true);
+
         // Validation
         if (!title.trim()) {
+            setIsCreatingEvent(false);
             showAlert('warning', 'Missing Title', 'Please enter an event title.');
             return;
         }
 
-        // Success action
-        const createEvent = async () => {
-            try {
-                await addEvent(title, startTime.toISOString(), endTime.toISOString(), description, reminderEnabled ? reminderTime : undefined, eventColor);
-                router.back();
-            } catch (error) {
-                console.error(error);
-                showAlert('error', 'Error', 'Could not save the event.');
-            }
-        };
+        try {
+            await addEvent(title, startTime.toISOString(), endTime.toISOString(), description, reminderEnabled ? reminderTime : undefined, eventColor);
 
-        showAlert('success', 'Create Event', 'Are you sure you want to create this event?', createEvent);
+            // Update initial state to current state to prevent future unsaved changes warnings
+            initialTitle.current = title;
+            initialDescription.current = description;
+            initialStartTime.current = new Date(startTime);
+            initialEndTime.current = new Date(endTime);
+            initialReminderEnabled.current = reminderEnabled;
+            initialReminderTime.current = reminderTime;
+            initialEventColor.current = eventColor;
+
+            // Create a function to clear form and close modal
+            const clearFormAndClose = () => {
+                // Clear form fields after successful creation
+                setTitle("");
+                setDescription("");
+                setStartTime(new Date());
+                setEndTime(new Date());
+                setReminderEnabled(false);
+                setReminderTime("5 minutes before");
+                setEventColor("#fed7aa");
+                setIsCreatingEvent(false);
+                setAlertVisible(false);
+            };
+
+            // Show success alert with single OK button - no navigation and clear form
+            showAlert('success', 'Event Created', 'Event created successfully!', clearFormAndClose, clearFormAndClose, '', 'OK');
+        } catch (error) {
+            console.error(error);
+            setIsCreatingEvent(false);
+            showAlert('error', 'Error', 'Could not save the event.');
+        }
     };
-
-    // Handle back button press
-
 
     return (
         <KeyboardAvoidingView
@@ -243,8 +338,10 @@ export default function CreateEventScreen() {
                 type={alertType}
                 title={alertTitle}
                 message={alertMessage}
+                cancelText={cancelText}
+                confirmText={confirmText}
                 onConfirm={pendingAction || (() => setAlertVisible(false))}
-                onCancel={() => setAlertVisible(false)}
+                onCancel={onCancelAction || (() => setAlertVisible(false))}
                 onClose={() => setAlertVisible(false)}
             />
         </KeyboardAvoidingView>
