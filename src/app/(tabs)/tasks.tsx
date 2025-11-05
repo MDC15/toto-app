@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 
 // Components
+import EmptyState from "@/components/common/EmptyState";
 import FloatingAddButton from "@/components/tasks/FloatingAddButton";
 import ProgressCard from "@/components/tasks/ProgressCard";
 import RecommendedTaskCard from "@/components/tasks/RecommendedTaskCard";
@@ -108,25 +109,33 @@ export default function TasksScreen() {
       {/* 📋 Danh sách Task */}
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
-          {filteredTasks.map((task) => {
-            const deadline = new Date(task.deadline);
-            const todayString = new Date().toDateString();
-            const taskDateString = deadline.toDateString();
-            const due = `${taskDateString === todayString ? 'Today' : deadline.toLocaleDateString()}, ${deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-            return (
-              <TaskCard
-                key={task.id}
-                title={task.title}
-                due={due}
-                description={task.description}
-                priority={task.priority}
-                completed={task.completed}
-                onToggleComplete={() => toggleComplete(task.id)}
-                onDelete={() => deleteTask(task.id)}
-                onEdit={() => router.push({ pathname: "/pages/edittask", params: { id: String(task.id) } })}
-              />
-            );
-          })}
+          {filteredTasks.length > 0 ? (
+            filteredTasks.map((task) => {
+              const deadline = new Date(task.deadline);
+              const todayString = new Date().toDateString();
+              const taskDateString = deadline.toDateString();
+              const due = `${taskDateString === todayString ? 'Today' : deadline.toLocaleDateString()}, ${deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+              return (
+                <TaskCard
+                  key={task.id}
+                  title={task.title}
+                  due={due}
+                  description={task.description}
+                  priority={task.priority}
+                  completed={task.completed}
+                  onToggleComplete={() => toggleComplete(task.id)}
+                  onDelete={() => deleteTask(task.id)}
+                  onEdit={() => router.push({ pathname: "/pages/edittask", params: { id: String(task.id) } })}
+                />
+              );
+            })
+          ) : (
+            <EmptyState
+              message={filter === "All Tasks" ? "No tasks for this day" : `No ${filter.toLowerCase()} tasks for this day`}
+              buttonText=""
+              onButtonPress={() => { }}
+            />
+          )}
         </View>
       </ScrollView>
 

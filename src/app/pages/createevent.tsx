@@ -175,7 +175,7 @@ export default function CreateEventScreen() {
                 setAlertVisible(false);
             };
 
-            // Show success alert with single OK button - no navigation and clear form
+            // Show success alert with single OK button - clear form and close modal
             showAlert('success', 'Event Created', 'Event created successfully!', clearFormAndClose, clearFormAndClose, '', 'OK');
         } catch (error) {
             console.error(error);

@@ -1,15 +1,14 @@
 import AlertModal from '@/components/common/AlertModal';
-import ColorPick from '@/components/habits/ColorPick';
 import DatePicker from '@/components/common/DatePicker';
 import ReminderSelector from '@/components/common/ReminderSelector';
+import ColorPick from '@/components/habits/ColorPick';
 import { addHabit } from '@/db/database';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function CreateHabit() {
-    const router = useRouter();
     const params = useLocalSearchParams();
     const [habitName, setHabitName] = useState(params.title as string || '');
     const [description, setDescription] = useState(params.description as string || '');
@@ -43,7 +42,7 @@ export default function CreateHabit() {
             />
 
             {/* Description */}
-            <Text style={styles.label}>Description (optional)</Text>
+            <Text style={styles.label}>Description</Text>
             <TextInput
                 value={description}
                 onChangeText={setDescription}
@@ -102,7 +101,7 @@ export default function CreateHabit() {
                 title={alertTitle}
                 message={alertMessage}
                 onConfirm={pendingAction || (() => setAlertVisible(false))}
-                onCancel={() => setAlertVisible(false)}
+                onCancel={alertType === 'success' ? undefined : () => setAlertVisible(false)}
                 onClose={() => setAlertVisible(false)}
             />
         </ScrollView>
@@ -118,7 +117,7 @@ export default function CreateHabit() {
     }
 
     // Handle create habit
-    function handleCreateHabit() {
+    async function handleCreateHabit() {
         if (!habitName.trim()) {
             showAlert('warning', 'Missing Name', 'Please enter a habit name.');
             return;
@@ -129,28 +128,38 @@ export default function CreateHabit() {
             return;
         }
 
-        const createHabitAction = async () => {
-            try {
-                await addHabit(
-                    habitName,
-                    description,
-                    'daily', // Default frequency
-                    1, // Default target count
-                    selectedColor,
-                    startDate.toISOString().split('T')[0],
-                    endDate ? endDate.toISOString().split('T')[0] : undefined,
-                    reminderEnabled ? reminderTime : undefined,
-                    false
-                );
-                // Navigate back to habits screen to refresh the list
-                router.replace('/(tabs)/habits');
-            } catch (error) {
-                console.error(error);
-                showAlert('error', 'Error', 'Could not create habit.');
-            }
-        };
+        try {
+            await addHabit(
+                habitName,
+                description,
+                'daily', // Default frequency
+                1, // Default target count
+                selectedColor,
+                startDate.toISOString().split('T')[0],
+                endDate ? endDate.toISOString().split('T')[0] : undefined,
+                reminderEnabled ? reminderTime : undefined,
+                false
+            );
 
-        showAlert('success', 'Create Habit', 'Are you sure you want to create this habit?', createHabitAction);
+            // Create a function to clear form and close modal
+            const clearFormAndClose = () => {
+                // Clear form fields after successful creation
+                setHabitName('');
+                setDescription('');
+                setSelectedColor('#ea580c');
+                setReminderEnabled(false);
+                setReminderTime('15 minutes before');
+                setStartDate(new Date());
+                setEndDate(null);
+                setAlertVisible(false);
+            };
+
+            // Show success alert and clear form
+            showAlert('success', 'Habit Created', 'Habit created successfully!', clearFormAndClose);
+        } catch (error) {
+            console.error(error);
+            showAlert('error', 'Error', 'Could not create habit.');
+        }
     }
 }
 

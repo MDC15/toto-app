@@ -1,7 +1,7 @@
 import AlertModal from '@/components/common/AlertModal';
-import ColorPick from '@/components/habits/ColorPick';
 import DatePicker from '@/components/common/DatePicker';
 import ReminderSelector from '@/components/common/ReminderSelector';
+import ColorPick from '@/components/habits/ColorPick';
 import { getHabits, updateHabit } from '@/db/database';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -119,7 +119,7 @@ export default function EditHabit() {
             />
 
             {/* Description */}
-            <Text style={styles.label}>Description (optional)</Text>
+            <Text style={styles.label}>Description</Text>
             <TextInput
                 value={description}
                 onChangeText={setDescription}

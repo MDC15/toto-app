@@ -19,9 +19,13 @@ const colors = [
     '#D8B4FE', // Soft violet
 ];
 
-export default function ColorPick({ selectedColor, onColorSelect, label = "Color" }: ColorPickProps) {
+export default function ColorPick({
+    selectedColor,
+    onColorSelect,
+    label = 'Color',
+}: ColorPickProps) {
     return (
-        <View>
+        <View style={styles.container}>
             <Text style={styles.label}>{label}</Text>
             <View style={styles.colorRow}>
                 {colors.map((c, i) => (
@@ -41,26 +45,42 @@ export default function ColorPick({ selectedColor, onColorSelect, label = "Color
 }
 
 const styles = StyleSheet.create({
+    container: {
+        marginTop: 10,
+        marginBottom: 20,
+        paddingHorizontal: 12, // căn đều hai bên
+        backgroundColor: '#fff',
+        paddingVertical: 16,
+        borderRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+    },
     label: {
         fontSize: 15,
         fontWeight: '600',
-        color: '#444',
-        marginBottom: 6,
-        paddingTop: 10,
+        color: '#333',
+        marginBottom: 8,
+        paddingHorizontal: 8,
+        textAlign: 'left',
+        paddingVertical: 4,
+        borderRadius: 4,
+        overflow: 'hidden',
+
     },
     colorRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
-        marginBottom: 25,
+        justifyContent: 'space-between', // căn đều hai bên
+        rowGap: 12,
     },
     colorDot: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
     },
     selectedDot: {
         borderWidth: 2,
         borderColor: '#333',
+        transform: [{ scale: 1.1 }],
     },
 });

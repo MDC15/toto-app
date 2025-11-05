@@ -6,6 +6,7 @@ import { Alert, ScrollView, StyleSheet, View, Text } from "react-native";
 import EventCard from "@/components/events/EventCard";
 import FloatingAddButton from "@/components/tasks/FloatingAddButton";
 import WeekCalendar from "@/components/tasks/WeekCalendar";
+import EmptyState from "@/components/common/EmptyState";
 import { deleteEvent, getEvents, updateEvent } from "@/db/database";
 import { getNow } from "@/utils/dateUtils";
 import { useFocusEffect } from '@react-navigation/native';
@@ -127,21 +128,29 @@ export default function EventsScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{ paddingHorizontal: 16, marginTop: 10 }}>
-                    {eventsForDate.map((event) => (
-                        <EventCard
-                            key={event.id}
-                            title={event.title}
-                            timeRange={event.timeRange}
-                            date={event.date}
-                            icon={event.icon}
-                            completed={event.completed}
-                            color={event.color}
-                            reminder={event.reminder}
-                            onToggleComplete={() => handleToggleComplete(event.id)}
-                            onEdit={() => handleEdit(event.id)}
-                            onDelete={() => handleDelete(event.id)}
+                    {eventsForDate.length > 0 ? (
+                        eventsForDate.map((event) => (
+                            <EventCard
+                                key={event.id}
+                                title={event.title}
+                                timeRange={event.timeRange}
+                                date={event.date}
+                                icon={event.icon}
+                                completed={event.completed}
+                                color={event.color}
+                                reminder={event.reminder}
+                                onToggleComplete={() => handleToggleComplete(event.id)}
+                                onEdit={() => handleEdit(event.id)}
+                                onDelete={() => handleDelete(event.id)}
+                            />
+                        ))
+                    ) : (
+                        <EmptyState
+                            message="No events for this day"
+                            buttonText=""
+                            onButtonPress={() => {}}
                         />
-                    ))}
+                    )}
                 </View>
             </ScrollView>
 

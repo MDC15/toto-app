@@ -4,15 +4,17 @@ import AddButton from "./AddButton";
 
 interface EmptyStateProps {
     message: string;
-    buttonText: string;
-    onButtonPress: () => void;
+    buttonText?: string;
+    onButtonPress?: () => void;
 }
 
 export default function EmptyState({ message, buttonText, onButtonPress }: EmptyStateProps) {
     return (
         <View style={styles.container}>
             <Text style={styles.message}>{message}</Text>
-            <AddButton label={buttonText} onPress={onButtonPress} />
+            {buttonText && buttonText.trim() !== '' && (
+                <AddButton label={buttonText} onPress={onButtonPress || (() => {})} />
+            )}
         </View>
     );
 }

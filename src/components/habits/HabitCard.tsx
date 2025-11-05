@@ -17,6 +17,12 @@ interface HabitCardProps {
     progress: number; // 0-100
     color: string;
     isCheckedIn: boolean;
+    canCheckIn: boolean;
+    startDate?: Date;
+    endDate?: Date;
+    frequency?: string;
+    targetCount?: number;
+    completedCount?: number;
     onEdit: () => void;
     onDelete: () => void;
     onCheckIn: () => void;
@@ -34,6 +40,12 @@ export default function HabitCard({
     progress,
     color,
     isCheckedIn,
+    canCheckIn,
+    startDate,
+    endDate,
+    frequency = 'daily',
+    targetCount = 1,
+    completedCount = 0,
     onEdit,
     onDelete,
     onCheckIn,
@@ -107,6 +119,29 @@ export default function HabitCard({
         outputRange: ["0%", "100%"],
     });
 
+    // 📅 Tính tiến độ theo ngày
+    const getDailyProgressText = () => {
+        if (!startDate) return '0/1 day';
+
+        const today = new Date();
+        const diffTime = today.getTime() - startDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 để tính ngày đầu tiên
+        const completedDays = completedCount;
+
+        return `${completedDays}/${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+    };
+
+    const getDailyProgressPercentage = () => {
+        if (!startDate) return 0;
+
+        const today = new Date();
+        const diffTime = today.getTime() - startDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        const completedDays = completedCount;
+
+        return Math.min((completedDays / diffDays) * 100, 100);
+    };
+
     return (
         <GestureHandlerRootView>
             <View style={styles.wrapper}>
@@ -144,15 +179,49 @@ export default function HabitCard({
                         ]}
                     >
                         <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
-                            <View style={styles.titleContainer}>
-                                <Text style={styles.title}>{title}</Text>
-                                <Feather
-                                    name={isCheckedIn ? "check-circle" : "circle"}
-                                    size={20}
-                                    color={isCheckedIn ? "#16a34a" : "#666666"}
-                                />
+                            <View style={styles.contentRow}>
+                                {/* Checkbox */}
+                                <TouchableOpacity
+                                    onPress={canCheckIn ? onCheckIn : undefined}
+                                    style={[styles.iconButton, !canCheckIn && styles.disabledButton]}
+                                    disabled={!canCheckIn}
+                                >
+                                    <Feather
+                                        name={isCheckedIn ? "check-circle" : "circle"}
+                                        size={24}
+                                        color={isCheckedIn ? "#10b981" : (canCheckIn ? "#9ca3af" : "#d1d5db")}
+                                    />
+                                </TouchableOpacity>
+
+                                {/* Content */}
+                                <View style={styles.texts}>
+                                    <Text
+                                        style={[styles.title, isCheckedIn && styles.textCompleted]}
+                                        numberOfLines={1}
+                                    >
+                                        {title}
+                                    </Text>
+
+                                    {/* Date range and frequency info */}
+                                    <View style={styles.dateInfoRow}>
+                                        <View style={styles.dateRow}>
+                                            <Feather name="calendar" size={14} color="#6b7280" />
+                                            <Text style={[styles.dateText, isCheckedIn && styles.textCompletedLight]}>
+                                                {startDate?.toLocaleDateString()}{endDate && ` - ${endDate.toLocaleDateString()}`}
+                                            </Text>
+                                        </View>
+
+                                        <View style={styles.frequencyRow}>
+                                            <Feather name="repeat" size={14} color="#6b7280" />
+                                            <Text style={[styles.frequencyText, isCheckedIn && styles.textCompletedLight]}>
+                                                {frequency} • {completedCount}/{targetCount}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
                             </View>
 
+                            {/* Progress bar */}
                             <View style={styles.progressBar}>
                                 <Animated.View
                                     style={[
@@ -162,18 +231,19 @@ export default function HabitCard({
                                 />
                             </View>
 
-                            <View style={styles.percentContainer}>
-                                <Text style={styles.percent}>
-                                    {Math.round(progress)}%
+                            {/* Daily progress bar */}
+                            <View style={styles.dailyProgressContainer}>
+                                <Text style={styles.dailyProgressLabel}>
+                                    {getDailyProgressText()}
                                 </Text>
-                                {progress === 100 && (
-                                    <Feather
-                                        name="check"
-                                        size={18}
-                                        color="#16a34a"
-                                        style={styles.completedIcon}
+                                <View style={styles.dailyProgressBar}>
+                                    <View
+                                        style={[
+                                            styles.dailyProgressFill,
+                                            { width: `${getDailyProgressPercentage()}%` },
+                                        ]}
                                     />
-                                )}
+                                </View>
                             </View>
                         </TouchableOpacity>
                     </Animated.View>
@@ -228,19 +298,52 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
     },
-    titleContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
+
+    // Content layout (EventCard-like structure)
+    contentRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 12,
     },
-    title: {
-        fontSize: 17,
-        fontWeight: "600",
-        color: "#000000",
+    iconButton: {
+        marginRight: 12,
+    },
+    disabledButton: {
+        opacity: 0.5,
+    },
+    texts: {
         flex: 1,
     },
+    title: {
+        fontWeight: "700",
+        fontSize: 17,
+        color: "#1f2937",
+        marginBottom: 2,
+    },
+    dateInfoRow: {
+        marginTop: 4,
+    },
+    dateRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 2,
+    },
+    dateText: {
+        fontSize: 13,
+        color: "#4b5563",
+        marginLeft: 6,
+    },
+    frequencyRow: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    frequencyText: {
+        fontSize: 13,
+        color: "#4b5563",
+        marginLeft: 6,
+    },
 
+    // Progress bar
     progressBar: {
         height: 8,
         borderRadius: 6,
@@ -252,21 +355,38 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         backgroundColor: "#ffffff",
     },
-    percentContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        marginTop: 6,
-        gap: 4,
+
+    // Daily progress bar
+    dailyProgressContainer: {
+        marginTop: 8,
+        paddingHorizontal: 4,
     },
-    percent: {
-        fontSize: 13,
-        color: "#000000",
-        fontWeight: "600",
+    dailyProgressLabel: {
+        fontSize: 11,
+        color: "#666666",
+        fontWeight: "500",
+        marginBottom: 4,
+        textAlign: "center",
     },
-    completedIcon: {
-        backgroundColor: '#ffffff',
-        borderRadius: 12,
-        padding: 2,
+    dailyProgressBar: {
+        height: 4,
+        borderRadius: 2,
+        overflow: "hidden",
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
+    },
+    dailyProgressFill: {
+        height: "100%",
+        borderRadius: 2,
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
+    },
+
+    // Completed states
+    textCompleted: {
+        textDecorationLine: "line-through",
+        color: "#9ca3af",
+    },
+    textCompletedLight: {
+        textDecorationLine: "line-through",
+        color: "#d1d5db",
     },
 });
