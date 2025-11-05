@@ -170,7 +170,6 @@ export default function HabitsScreen() {
                             <HabitCard
                                 key={h.id}
                                 title={h.title}
-                                progress={h.progress}
                                 color={h.color}
                                 startDate={h.startDate}
                                 endDate={h.endDate}
