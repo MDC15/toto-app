@@ -1,5 +1,5 @@
-import * as SQLite from 'expo-sqlite';
 import { getDateString } from '@/utils/dateUtils';
+import * as SQLite from 'expo-sqlite';
 
 // Mở database đồng bộ
 const db = SQLite.openDatabaseSync('todolist.db');
@@ -34,7 +34,7 @@ export const isDateInCompletedDates = (completedDates: string[], targetDate: str
         const normalizedTarget = targetDate.match(/^\d{4}-\d{2}-\d{2}$/)
             ? targetDate
             : getDateString(parseHabitDate(targetDate));
-        
+
         return completedDates.includes(normalizedTarget);
     } catch (error) {
         console.warn('Error checking habit completion:', error);
