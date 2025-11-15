@@ -8,9 +8,9 @@ import {
     Text,
     View,
 } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, G, Stop, Text as SvgText } from 'react-native-svg';
-import { TimeSeriesData } from '../../utils/dataAnalysis';
+import Svg, { Defs, G, LinearGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { PeriodType } from '../../hooks/useSummaryData';
+import { TimeSeriesData } from '../../utils/dataAnalysis';
 
 interface Props {
     data?: TimeSeriesData[];
@@ -39,14 +39,14 @@ export default function TaskOverviewChart({ data, loading = false, period = 'wee
         if (!data || data.length === 0)
             return { labels: [], datasets: [{ data: [] }] };
 
-        const formatLabel = (date: string, period: PeriodType) => {
+        const formatLabel = (date: string, period: PeriodType, index: number) => {
             const dateObj = new Date(date);
 
             switch (period) {
                 case 'daily':
                     return dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                 case 'weekly':
-                    return `${dateObj.toLocaleDateString('en-US', { month: 'short' })} ${getWeekNumber(dateObj)}`;
+                    return `Week ${index + 1}`;
                 case 'monthly':
                     return dateObj.toLocaleDateString('en-US', { month: 'short' });
                 default:
@@ -54,15 +54,7 @@ export default function TaskOverviewChart({ data, loading = false, period = 'wee
             }
         };
 
-        const getWeekNumber = (date: Date) => {
-            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-            const dayNum = d.getUTCDay() || 7;
-            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-        };
-
-        const labels = data.map((item) => formatLabel(item.date, period));
+        const labels = data.map((item, index) => formatLabel(item.date, period, index));
 
         // Enhanced completion rate calculation with better visual feedback
         const rates = data.map((item) => {
@@ -93,7 +85,7 @@ export default function TaskOverviewChart({ data, loading = false, period = 'wee
                     <Animated.View>
                         <ActivityIndicator size="large" color="#4CAF50" />
                     </Animated.View>
-                    <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+                    <Text style={styles.loadingText}>Loading data...</Text>
                 </View>
             </View>
         );
@@ -106,11 +98,11 @@ export default function TaskOverviewChart({ data, loading = false, period = 'wee
                 <View style={styles.headerContent}>
                     <Text style={styles.icon}>📈</Text>
                     <View>
-                        <Text style={styles.title}>Tiến độ hoàn thành công việc</Text>
+                        <Text style={styles.title}>Task Progress Overview</Text>
                         <Text style={styles.subtitle}>
-                            {period === 'daily' ? 'Tỷ lệ hoàn thành hàng ngày' :
-                                period === 'weekly' ? 'Tỷ lệ hoàn thành hàng tuần' :
-                                    'Tỷ lệ hoàn thành hàng tháng'}
+                            {period === 'daily' ? 'Daily completion rates' :
+                                period === 'weekly' ? 'Weekly completion rates' :
+                                    'Monthly completion rates'}
                         </Text>
                     </View>
                 </View>
@@ -230,16 +222,16 @@ export default function TaskOverviewChart({ data, loading = false, period = 'wee
                     {/* Chart summary */}
                     <View style={styles.summaryContainer}>
                         <Text style={styles.summaryText}>
-                            📊 Tổng cộng: {data.length} {period === 'daily' ? 'ngày' : period === 'weekly' ? 'tuần' : 'tháng'}
+                            📊 Total: {data.length} {period === 'daily' ? 'days' : period === 'weekly' ? 'weeks' : 'months'}
                         </Text>
                     </View>
                 </View>
             ) : (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyIcon}>📊</Text>
-                    <Text style={styles.emptyTitle}>Không có dữ liệu</Text>
+                    <Text style={styles.emptyTitle}>No data available</Text>
                     <Text style={styles.emptySubtitle}>
-                        Hoàn thành một số công việc để xem tiến độ của bạn ở đây.
+                        Complete some tasks to see your progress here.
                     </Text>
                 </View>
             )}

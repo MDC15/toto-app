@@ -51,9 +51,9 @@ export default function CalendarCard({ onDateSelect, markedData = [] }: Calendar
 
     // 🎯 Quay lại hôm nay
     const handleToday = () => {
-        setSelectedDate(TODAY_STRING);
-        setDisplayedDate(TODAY);
-        onDateSelect?.(TODAY);
+        const today = getNow();
+        setSelectedDate(getDateString(today));
+        setDisplayedDate(today);
     };
 
     // 🎯 Mở chọn tháng (DateTimePicker)
@@ -75,7 +75,12 @@ export default function CalendarCard({ onDateSelect, markedData = [] }: Calendar
     const markedDates = useMemo(() => {
         const marks: { [key: string]: any } = {};
         markedData.forEach((item) => {
-            marks[item.date] = { marked: true, dotColor: item.color || "#3b82f6" };
+            marks[item.date] = {
+                marked: true,
+                dotColor: item.color || "#3b82f6",
+                dotSize: 6, // Make dots bigger
+                dotOpacity: 1, // Full opacity for better visibility
+            };
         });
         marks[selectedDate] = {
             ...(marks[selectedDate] || {}),
@@ -105,30 +110,32 @@ export default function CalendarCard({ onDateSelect, markedData = [] }: Calendar
                 </View>
             </View>
 
-            {/* Calendar */}
-            <Calendar
-                key={displayedDate.toISOString()}
-                current={getDateString(displayedDate)}
-                onDayPress={handleDayPress}
-                markedDates={markedDates}
-                markingType="dot"
-                hideExtraDays={false}
-                enableSwipeMonths={true}
-                theme={{
-                    backgroundColor: "#fff",
-                    calendarBackground: "#fff",
-                    todayTextColor: "#e76f51",
-                    selectedDayBackgroundColor: "#f97316",
-                    textDayFontSize: 15,
-                    textMonthFontSize: 18,
-                    textDayHeaderFontSize: 13,
-                    arrowColor: "#111827",
-                    monthTextColor: "#111827",
-                    textMonthFontWeight: "700",
-                    textDayFontWeight: "500",
-                }}
-                style={styles.calendar}
-            />
+            {/* Calendar with fixed height */}
+            <View style={styles.calendarContainer}>
+                <Calendar
+                    key={displayedDate.toISOString()}
+                    current={getDateString(displayedDate)}
+                    onDayPress={handleDayPress}
+                    markedDates={markedDates}
+                    markingType="dot"
+                    hideExtraDays={false}
+                    enableSwipeMonths={true}
+                    theme={{
+                        backgroundColor: "#fff",
+                        calendarBackground: "#fff",
+                        todayTextColor: "#e76f51",
+                        selectedDayBackgroundColor: "#f97316",
+                        textDayFontSize: 15,
+                        textMonthFontSize: 18,
+                        textDayHeaderFontSize: 13,
+                        arrowColor: "#111827",
+                        monthTextColor: "#111827",
+                        textMonthFontWeight: "700",
+                        textDayFontWeight: "500",
+                    }}
+                    style={styles.calendar}
+                />
+            </View>
 
             {/* Month picker modal */}
             {showPicker && (
@@ -187,6 +194,9 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontWeight: "600",
         fontSize: responsive.fontSize(14),
+    },
+    calendarContainer: {
+        height: 380, // Fixed height to accommodate all weeks in any month
     },
     calendar: {
         borderRadius: responsive.spacing(12),

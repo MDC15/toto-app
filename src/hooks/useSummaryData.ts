@@ -51,7 +51,7 @@ export function useSummaryData(initialPeriod: PeriodType = 'weekly'): UseSummary
             // Fetch all data in parallel for better performance
             const [statsData, timeData, breakdownData] = await Promise.all([
                 calculateSummaryStats(currentPeriod),
-                getTimeSeriesData(currentPeriod, currentPeriod === 'daily' ? 7 : currentPeriod === 'weekly' ? 7 : 365), // Show 12 months for monthly view
+                getTimeSeriesData(currentPeriod, currentPeriod === 'daily' ? 7 : currentPeriod === 'weekly' ? 8 : 12), // Show 7 days, 8 weeks, 12 months
                 getActivityBreakdown()
             ]);
 

@@ -88,6 +88,7 @@ export const initDatabase = (): void => {
             `);
 
             // Add new columns if they don't exist
+            addColumnIfNotExists('tasks', 'reminder', 'TEXT');
             addColumnIfNotExists('events', 'reminder', 'TEXT');
             addColumnIfNotExists('events', 'color', 'TEXT');
             addColumnIfNotExists('habits', 'start_date', 'TEXT');
@@ -118,15 +119,14 @@ const addColumnIfNotExists = (table: string, column: string, type: string): void
 // ==========================
 // 📋 TASK FUNCTIONS
 // ==========================
-export const addTask = (title: string, description: string, deadline: string, priority: string): void => {
+export const addTask = (title: string, description: string, deadline: string, priority: string, reminder?: string): number => {
     try {
-        db.withTransactionSync(() => {
-            db.runSync(
-                `INSERT INTO tasks (title, description, deadline, priority, completed) VALUES (?, ?, ?, ?, 0);`,
-                [title, description, deadline, priority]
-            );
-        });
+        const result = db.runSync(
+            `INSERT INTO tasks (title, description, deadline, priority, reminder, completed) VALUES (?, ?, ?, ?, ?, 0);`,
+            [title, description, deadline, priority, reminder || null]
+        );
         console.log('✅ Task added successfully');
+        return result.lastInsertRowId as number;
     } catch (error) {
         console.error('❌ Error adding task:', error);
         throw error;
@@ -149,12 +149,13 @@ export const updateTask = (
     description: string,
     deadline: string,
     priority: string,
-    completed: boolean
+    completed: boolean,
+    reminder?: string
 ): void => {
     try {
         db.runSync(
-            `UPDATE tasks SET title = ?, description = ?, deadline = ?, priority = ?, completed = ? WHERE id = ?;`,
-            [title, description, deadline, priority, completed ? 1 : 0, id]
+            `UPDATE tasks SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?, reminder = ? WHERE id = ?;`,
+            [title, description, deadline, priority, completed ? 1 : 0, reminder || null, id]
         );
         console.log(`✅ Task ${id} updated`);
     } catch (error) {
@@ -176,13 +177,14 @@ export const deleteTask = (id: number): void => {
 // ==========================
 // 📅 EVENT FUNCTIONS
 // ==========================
-export const addEvent = (title: string, startTime: string, endTime: string, description: string, reminder?: string, color?: string): void => {
+export const addEvent = (title: string, startTime: string, endTime: string, description: string, reminder?: string, color?: string): number => {
     try {
-        db.runSync(
+        const result = db.runSync(
             `INSERT INTO events (title, start_time, end_time, description, reminder, color) VALUES (?, ?, ?, ?, ?, ?);`,
             [title, startTime, endTime, description, reminder || null, color || null]
         );
         console.log('✅ Event added');
+        return result.lastInsertRowId as number;
     } catch (error) {
         console.error('❌ Error adding event:', error);
         throw error;
@@ -239,13 +241,14 @@ export const deleteEvent = (id: number): void => {
 // ==========================
 // 🏃 HABITS FUNCTIONS
 // ==========================
-export const addHabit = (title: string, description: string, frequency: string, targetCount: number, color?: string, startDate?: string, endDate?: string, reminder?: string, allowMultiplePerDay?: boolean): void => {
+export const addHabit = (title: string, description: string, frequency: string, targetCount: number, color?: string, startDate?: string, endDate?: string, reminder?: string, allowMultiplePerDay?: boolean): number => {
     try {
-        db.runSync(
+        const result = db.runSync(
             `INSERT INTO habits (title, description, frequency, target_count, current_count, color, start_date, end_date, reminder, completed_dates, allow_multiple_per_day) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?);`,
             [title, description, frequency, targetCount, color || null, startDate || null, endDate || null, reminder || null, '[]', allowMultiplePerDay ? 1 : 0]
         );
         console.log('✅ Habit added successfully');
+        return result.lastInsertRowId as number;
     } catch (error) {
         console.error('❌ Error adding habit:', error);
         throw error;

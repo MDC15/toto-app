@@ -20,9 +20,11 @@ import {
     parseHabitDate,
 } from '@/db/database';
 import { getDateString, getNow } from '@/utils/dateUtils';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 export default function HabitsScreen() {
     const router = useRouter();
+    const { cancelHabitNotification } = useNotifications();
     const [selectedDate, setSelectedDate] = useState(getNow());
     const [habits, setHabits] = useState<any[]>([]);
 
@@ -130,6 +132,8 @@ export default function HabitsScreen() {
     };
 
     const handleDelete = async (id: number) => {
+        // Cancel notification before deleting
+        await cancelHabitNotification(id);
         await deleteHabit(id);
         await loadHabits();
     };

@@ -34,17 +34,41 @@ function calculateCompletionRate(completed: number, total: number): number {
 function calculateProductivityScore(
     taskCompletionRate: number,
     habitCompletionRate: number,
-    eventAttendance: number
+    eventAttendance: number,
+    totalTasks: number = 0,
+    totalEvents: number = 0,
+    totalHabits: number = 0
 ): number {
-    const taskWeight = 0.5;
-    const habitWeight = 0.3;
-    const eventWeight = 0.2;
+    // Dynamic weighting based on activity volume
+    const totalActivities = totalTasks + totalEvents + totalHabits;
 
-    return Math.round(
+    let taskWeight = 0.5, habitWeight = 0.3, eventWeight = 0.2;
+
+    // Adjust weights based on activity distribution
+    if (totalTasks > 0 && totalEvents > 0) {
+        const taskRatio = totalTasks / totalActivities;
+        const eventRatio = totalEvents / totalActivities;
+        taskWeight = 0.4 + (taskRatio * 0.2);
+        eventWeight = 0.3 + (eventRatio * 0.1);
+        habitWeight = 0.3; // Keep habit weight constant
+    }
+
+    // Ensure weights sum to 1
+    const totalWeight = taskWeight + habitWeight + eventWeight;
+    taskWeight /= totalWeight;
+    habitWeight /= totalWeight;
+    eventWeight /= totalWeight;
+
+    // Penalty for low activity
+    const activityPenalty = totalActivities < 3 ? 0.8 : 1;
+
+    const baseScore = (
         (taskCompletionRate * taskWeight) +
         (habitCompletionRate * habitWeight) +
         (eventAttendance * eventWeight)
-    );
+    ) * activityPenalty;
+
+    return Math.round(Math.max(0, Math.min(100, baseScore)));
 }
 
 // Core data fetching functions
@@ -147,12 +171,10 @@ export async function calculateSummaryStats(period: 'daily' | 'weekly' | 'monthl
         const productivityScore = calculateProductivityScore(
             taskCompletionRate,
             habitCompletionRate,
-            eventAttendanceRate
-        );
-
-        const completionRate = calculateCompletionRate(
-            completedTasks + activeHabits,
-            totalTasks + totalHabits
+            eventAttendanceRate,
+            totalTasks,
+            totalEvents,
+            totalHabits
         );
 
         return {
@@ -162,7 +184,7 @@ export async function calculateSummaryStats(period: 'daily' | 'weekly' | 'monthl
             activeHabits,
             totalEvents,
             upcomingEvents,
-            completionRate,
+            completionRate: taskCompletionRate,
             productivityScore
         };
     } catch (error) {
@@ -182,63 +204,151 @@ export async function calculateSummaryStats(period: 'daily' | 'weekly' | 'monthl
 
 export async function getTimeSeriesData(
     period: 'daily' | 'weekly' | 'monthly',
-    days: number = 7
+    periods: number = 7
 ): Promise<TimeSeriesData[]> {
     const now = new Date();
     const data: TimeSeriesData[] = [];
 
     if (period === 'monthly') {
-        // Show all 12 months of the current year
-        for (let month = 0; month < 12; month++) {
-            const startDate = new Date(now.getFullYear(), month, 1);
+        // Show last 12 months from current month
+        for (let i = periods - 1; i >= 0; i--) {
+            const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const startDate = new Date(targetDate);
             startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(now.getFullYear(), month + 1, 0);
+            const endDate = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
             endDate.setHours(23, 59, 59, 999);
 
             try {
-                const tasks = await getTasksInPeriod(startDate, endDate);
+                const [tasks, habits, events] = await Promise.all([
+                    getTasksInPeriod(startDate, endDate),
+                    getHabitsInPeriod(startDate, endDate),
+                    getEventsInPeriod(startDate, endDate)
+                ]);
+
                 const completedTasks = tasks.filter(task => task.completed === 1).length;
+                const activeHabits = habits.filter(habit => {
+                    const completedDates = JSON.parse(habit.completed_dates || '[]');
+                    return completedDates.some((date: string) => {
+                        const completedDate = new Date(date);
+                        return completedDate >= startDate && completedDate <= endDate;
+                    });
+                }).length;
+                const completedEvents = events.filter(event => event.completed === 1).length;
+
+                // Weighted completion score: tasks (50%), habits (30%), events (20%)
+                const totalActivities = tasks.length + habits.length + events.length;
+                const weightedScore = totalActivities > 0 ?
+                    Math.round(((completedTasks * 0.5) + (activeHabits * 0.3) + (completedEvents * 0.2)) / totalActivities * 100) : 0;
 
                 data.push({
                     date: getDateString(startDate),
-                    completed: completedTasks,
-                    total: tasks.length
+                    completed: weightedScore,
+                    total: 100 // 100% as baseline for percentage
                 });
             } catch (error) {
-                console.error('Error fetching time series data for month:', month, error);
+                console.error('Error fetching time series data for month:', targetDate, error);
                 data.push({
                     date: getDateString(startDate),
                     completed: 0,
-                    total: 0
+                    total: 100
+                });
+            }
+        }
+    } else if (period === 'weekly') {
+        // Show last 8 weeks
+        for (let i = periods - 1; i >= 0; i--) {
+            const weekStart = new Date(now);
+            weekStart.setDate(weekStart.getDate() - (i * 7));
+            weekStart.setHours(0, 0, 0, 0);
+
+            // Get start of week (Monday)
+            const dayOfWeek = weekStart.getDay();
+            const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Adjust for Monday start
+            weekStart.setDate(weekStart.getDate() + diff);
+
+            const endDate = new Date(weekStart);
+            endDate.setDate(endDate.getDate() + 6);
+            endDate.setHours(23, 59, 59, 999);
+
+            try {
+                const [tasks, habits, events] = await Promise.all([
+                    getTasksInPeriod(weekStart, endDate),
+                    getHabitsInPeriod(weekStart, endDate),
+                    getEventsInPeriod(weekStart, endDate)
+                ]);
+
+                const completedTasks = tasks.filter(task => task.completed === 1).length;
+                const activeHabits = habits.filter(habit => {
+                    const completedDates = JSON.parse(habit.completed_dates || '[]');
+                    return completedDates.some((date: string) => {
+                        const completedDate = new Date(date);
+                        return completedDate >= weekStart && completedDate <= endDate;
+                    });
+                }).length;
+                const completedEvents = events.filter(event => event.completed === 1).length;
+
+                // Weekly completion rate
+                const totalActivities = tasks.length + habits.length + events.length;
+                const weeklyScore = totalActivities > 0 ?
+                    Math.round(((completedTasks * 0.5) + (activeHabits * 0.3) + (completedEvents * 0.2)) / totalActivities * 100) : 0;
+
+                data.push({
+                    date: getDateString(weekStart),
+                    completed: weeklyScore,
+                    total: 100
+                });
+            } catch (error) {
+                console.error('Error fetching time series data for week:', weekStart, error);
+                data.push({
+                    date: getDateString(weekStart),
+                    completed: 0,
+                    total: 100
                 });
             }
         }
     } else {
-        // Original logic for daily and weekly
-        for (let i = days - 1; i >= 0; i--) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i);
+        // Daily: Show last 7 days
+        for (let i = periods - 1; i >= 0; i--) {
+            const dayDate = new Date(now);
+            dayDate.setDate(dayDate.getDate() - i);
+            dayDate.setHours(0, 0, 0, 0);
 
-            const startDate = new Date(date);
-            startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(date);
+            const endDate = new Date(dayDate);
             endDate.setHours(23, 59, 59, 999);
 
             try {
-                const tasks = await getTasksInPeriod(startDate, endDate);
+                const [tasks, habits, events] = await Promise.all([
+                    getTasksInPeriod(dayDate, endDate),
+                    getHabitsInPeriod(dayDate, endDate),
+                    getEventsInPeriod(dayDate, endDate)
+                ]);
+
                 const completedTasks = tasks.filter(task => task.completed === 1).length;
+                const activeHabits = habits.filter(habit => {
+                    const completedDates = JSON.parse(habit.completed_dates || '[]');
+                    return completedDates.some((dateStr: string) => {
+                        const completedDate = new Date(dateStr);
+                        return completedDate >= dayDate && completedDate <= endDate;
+                    });
+                }).length;
+                const completedEvents = events.filter(event => event.completed === 1).length;
+
+                // Daily completion rate
+                const totalActivities = tasks.length + habits.length + events.length;
+                const dailyScore = totalActivities > 0 ?
+                    Math.round(((completedTasks * 0.5) + (activeHabits * 0.3) + (completedEvents * 0.2)) / totalActivities * 100) : 0;
 
                 data.push({
-                    date: getDateString(date),
-                    completed: completedTasks,
-                    total: tasks.length
+                    date: getDateString(dayDate),
+                    completed: dailyScore,
+                    total: 100
                 });
             } catch (error) {
-                console.error('Error fetching time series data for date:', date, error);
+                console.error('Error fetching time series data for date:', dayDate, error);
                 data.push({
-                    date: getDateString(date),
+                    date: getDateString(dayDate),
                     completed: 0,
-                    total: 0
+                    total: 100
                 });
             }
         }

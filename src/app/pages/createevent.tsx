@@ -1,11 +1,13 @@
 import AlertModal from "@/components/common/AlertModal";
-import ReminderSelector from "@/components/common/ReminderSelector";
+import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
 import { addEvent } from "@/db/database";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from "react";
 import {
+    Alert,
     Keyboard,
     KeyboardAvoidingView,
     Platform,
@@ -26,9 +28,10 @@ export default function CreateEventScreen() {
     const [startTime, setStartTime] = useState(new Date());
     const [endTime, setEndTime] = useState(new Date());
     const [reminderEnabled, setReminderEnabled] = useState(false);
-    const [reminderTime, setReminderTime] = useState("5 minutes before");
+    const [reminderTime, setReminderTime] = useState<string | null>("5 minutes before");
     const [eventColor, setEventColor] = useState("#fed7aa");
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+    const { hasPermission, scheduleEventNotification } = useNotifications();
 
     // Track initial state for change detection
     const initialTitle = useRef("");
@@ -36,7 +39,7 @@ export default function CreateEventScreen() {
     const initialStartTime = useRef(new Date());
     const initialEndTime = useRef(new Date());
     const initialReminderEnabled = useRef(false);
-    const initialReminderTime = useRef("5 minutes before");
+    const initialReminderTime = useRef<string | null>("5 minutes before");
     const initialEventColor = useRef("#fed7aa");
 
     // Diagnostic logging for reminder state
@@ -150,7 +153,27 @@ export default function CreateEventScreen() {
         }
 
         try {
-            await addEvent(title, startTime.toISOString(), endTime.toISOString(), description, reminderEnabled ? reminderTime : undefined, eventColor);
+            const newEventId = await addEvent(title, startTime.toISOString(), endTime.toISOString(), description, reminderEnabled && reminderTime ? reminderTime : undefined, eventColor);
+
+            // Schedule notification if reminder is enabled and we have a valid reminder time
+            if (reminderEnabled && reminderTime && hasPermission) {
+                // Calculate reminder time from the start time and selected offset
+                let reminderOffset: { hours?: number; minutes?: number } = { minutes: 5 };
+
+                if (reminderTime.includes("1 minute")) reminderOffset = { minutes: 1 };
+                else if (reminderTime.includes("15 minutes")) reminderOffset = { minutes: 15 };
+                else if (reminderTime.includes("30 minutes")) reminderOffset = { minutes: 30 };
+                else if (reminderTime.includes("1 hour")) reminderOffset = { hours: 1 };
+                else if (reminderTime.includes("2 hours")) reminderOffset = { hours: 2 };
+
+                await scheduleEventNotification(
+                    newEventId,
+                    title,
+                    description,
+                    startTime.toISOString(),
+                    reminderOffset
+                );
+            }
 
             // Update initial state to current state to prevent future unsaved changes warnings
             initialTitle.current = title;
@@ -158,7 +181,7 @@ export default function CreateEventScreen() {
             initialStartTime.current = new Date(startTime);
             initialEndTime.current = new Date(endTime);
             initialReminderEnabled.current = reminderEnabled;
-            initialReminderTime.current = reminderTime;
+            initialReminderTime.current = reminderTime || null;
             initialEventColor.current = eventColor;
 
             // Create a function to clear form and close modal
@@ -178,7 +201,7 @@ export default function CreateEventScreen() {
             // Show success alert with single OK button - clear form and close modal
             showAlert('success', 'Event Created', 'Event created successfully!', clearFormAndClose, clearFormAndClose, '', 'OK');
         } catch (error) {
-            console.error(error);
+            console.error('Error creating event:', error);
             setIsCreatingEvent(false);
             showAlert('error', 'Error', 'Could not save the event.');
         }
@@ -213,11 +236,28 @@ export default function CreateEventScreen() {
                     textAlignVertical="top"
                 />
 
-                <ReminderSelector
+                <UnifiedReminderSelector
+                    type="event"
                     enabled={reminderEnabled}
-                    selected={reminderTime}
                     onToggle={setReminderEnabled}
-                    onSelect={setReminderTime}
+                    value={reminderTime ? new Date().toISOString() : null}
+                    onChange={(time) => {
+                        if (time) {
+                            // Calculate time difference from start time for events
+                            const timeDiff = startTime.getTime() - new Date(time).getTime();
+                            const minutesBefore = Math.round(timeDiff / (1000 * 60));
+                            if (minutesBefore === 1) setReminderTime("1 minute before");
+                            else if (minutesBefore === 15) setReminderTime("15 minutes before");
+                            else if (minutesBefore === 30) setReminderTime("30 minutes before");
+                            else if (minutesBefore === 60) setReminderTime("1 hour before");
+                            else if (minutesBefore === 120) setReminderTime("2 hours before");
+                            else setReminderTime(`${minutesBefore} minutes before`);
+                        } else {
+                            setReminderTime(null);
+                        }
+                    }}
+                    mainTime={startTime.toISOString()}
+                    disabled={!hasPermission || isCreatingEvent}
                 />
 
                 <Text style={styles.label}>Event Color</Text>

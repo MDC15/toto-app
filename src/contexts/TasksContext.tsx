@@ -14,6 +14,7 @@ import {
     updateTask as dbUpdateTask,
     initDatabase,
 } from "../db/database";
+import { useNotifications } from "./NotificationContext";
 
 // ===============================
 // 🔹 Kiểu dữ liệu Task
@@ -26,6 +27,7 @@ export type Task = {
     description?: string;
     priority: "High" | "Medium" | "Low";
     deadline: string; // 2025-05-15
+    reminder?: string; // Reminder time
     completed: boolean;
 };
 
@@ -34,8 +36,8 @@ export type Task = {
 // ===============================
 type TasksContextType = {
     tasks: Task[];
-    addTask: (task: Omit<Task, "id" | "completed">) => Promise<void>;
-    updateTask: (id: number, updates: Partial<Omit<Task, "id">>) => Promise<void>;
+    addTask: (task: Omit<Task, "id" | "completed">, scheduleNotification?: boolean) => Promise<void>;
+    updateTask: (id: number, updates: Partial<Omit<Task, "id">>, scheduleNotification?: boolean) => Promise<void>;
     deleteTask: (id: number) => Promise<void>;
     toggleComplete: (id: number) => Promise<void>;
     getTaskById: (id: number) => Task | undefined;
@@ -52,6 +54,7 @@ const TasksContext = createContext<TasksContextType | undefined>(undefined);
 export function TasksProvider({ children }: { children: ReactNode }) {
     const [tasks, setTasks] = useState<Task[]>([]);
     const isInitialized = useRef(false);
+    const { scheduleTaskNotification, cancelTaskNotification } = useNotifications();
 
     // 🔸 Load tasks từ database
     const loadTasks = useCallback(async () => {
@@ -77,6 +80,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
                     description: t.description,
                     priority: t.priority as "High" | "Medium" | "Low",
                     deadline: deadline.toISOString(),
+                    reminder: t.reminder,
                     completed: !!t.completed,
                 } as Task;
             });
@@ -99,22 +103,40 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     }, [loadTasks]);
 
     // 🔸 Thêm task
-    const addTask = async (task: Omit<Task, "id" | "completed">) => {
+    const addTask = async (task: Omit<Task, "id" | "completed">, scheduleNotification: boolean = true) => {
         try {
-            await dbAddTask(
+            const newTaskId = await dbAddTask(
                 task.title,
                 task.description ?? "",
                 task.deadline,
-                task.priority
+                task.priority,
+                task.reminder
             );
             await loadTasks();
+
+            // Schedule notification if requested
+            if (scheduleNotification && task.reminder && newTaskId) {
+                const reminderTime = new Date(task.reminder);
+                const reminderOffset = {
+                    hours: Math.max(0, Math.floor((reminderTime.getTime() - new Date(task.deadline).getTime()) / (1000 * 60 * 60))),
+                    minutes: Math.floor(((reminderTime.getTime() - new Date(task.deadline).getTime()) % (1000 * 60 * 60)) / (1000 * 60))
+                };
+
+                await scheduleTaskNotification(
+                    newTaskId,
+                    task.title,
+                    task.description || "",
+                    task.deadline,
+                    reminderOffset
+                );
+            }
         } catch (err) {
             console.error("❌ Error adding task:", err);
         }
     };
 
     // 🔸 Cập nhật task
-    const updateTask = async (id: number, updates: Partial<Omit<Task, "id">>) => {
+    const updateTask = async (id: number, updates: Partial<Omit<Task, "id">>, scheduleNotification: boolean = true) => {
         const task = tasks.find((t) => t.id === id);
         if (!task) return;
 
@@ -128,8 +150,30 @@ export function TasksProvider({ children }: { children: ReactNode }) {
                 merged.description ?? "",
                 deadline.toISOString(),
                 merged.priority,
-                merged.completed
+                merged.completed,
+                merged.reminder
             );
+
+            // Cancel existing notification
+            await cancelTaskNotification(id);
+
+            // Schedule new notification if requested
+            if (scheduleNotification && merged.reminder) {
+                const reminderTime = new Date(merged.reminder);
+                const reminderOffset = {
+                    hours: Math.max(0, Math.floor((reminderTime.getTime() - deadline.getTime()) / (1000 * 60 * 60))),
+                    minutes: Math.floor(((reminderTime.getTime() - deadline.getTime()) % (1000 * 60 * 60)) / (1000 * 60))
+                };
+
+                await scheduleTaskNotification(
+                    id,
+                    merged.title,
+                    merged.description || "",
+                    deadline.toISOString(),
+                    reminderOffset
+                );
+            }
+
             await loadTasks();
         } catch (err) {
             console.error("❌ Error updating task:", err);
@@ -139,6 +183,8 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     // 🔸 Xóa task
     const deleteTask = async (id: number) => {
         try {
+            // Cancel notification before deleting
+            await cancelTaskNotification(id);
             await dbDeleteTask(id);
             await loadTasks();
         } catch (err) {
@@ -160,7 +206,8 @@ export function TasksProvider({ children }: { children: ReactNode }) {
                 task.description ?? "",
                 deadline.toISOString(),
                 task.priority,
-                !task.completed
+                !task.completed,
+                task.reminder
             );
             await loadTasks();
         } catch (err) {

@@ -1,9 +1,10 @@
 import AlertModal from '@/components/common/AlertModal';
 import DatePicker from '@/components/common/DatePicker';
-import ReminderSelector from '@/components/common/ReminderSelector';
+import { UnifiedReminderSelector } from '@/components/common/UnifiedReminderSelector';
 import ColorPick from '@/components/habits/ColorPick';
 import { getHabits, updateHabit } from '@/db/database';
 import { getDateString } from '@/utils/dateUtils';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
@@ -18,10 +19,11 @@ export default function EditHabit() {
     const [targetCount, setTargetCount] = useState(1);
     const [selectedColor, setSelectedColor] = useState('#ea580c');
     const [reminderEnabled, setReminderEnabled] = useState(false);
-    const [reminderTime, setReminderTime] = useState('15 minutes before');
+    const [reminderTime, setReminderTime] = useState<string | null>(null);
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [showTargetInput, setShowTargetInput] = useState(false);
+    const { hasPermission, scheduleHabitNotification, cancelHabitNotification } = useNotifications();
 
     // Debug: Track reminder state changes
     React.useEffect(() => {
@@ -64,7 +66,7 @@ export default function EditHabit() {
                     setSelectedColor(habit.color || '#fed7aa');
                     const reminderEnabled = habit.reminder !== null && habit.reminder !== undefined && habit.reminder !== '';
                     setReminderEnabled(reminderEnabled);
-                    setReminderTime(habit.reminder || '15 minutes before');
+                    setReminderTime(habit.reminder || null);
                     setStartDate(habit.start_date ? parseHabitDate(habit.start_date) : new Date());
                     setEndDate(habit.end_date ? parseHabitDate(habit.end_date) : null);
                 }
@@ -110,9 +112,56 @@ export default function EditHabit() {
 
         const updateHabitAction = async () => {
             try {
-                const reminderValue = reminderEnabled ? reminderTime : undefined;
+                const reminderValue = reminderEnabled && reminderTime ? reminderTime : undefined;
                 console.log('EditHabit: Updating habit with reminder:', reminderValue);
+
+                // Update the habit
                 await updateHabit(parseInt(id as string), habitName, description, frequency, targetCount, 0, selectedColor, reminderValue, getDateString(startDate), endDate ? getDateString(endDate) : undefined, undefined, false);
+
+                // Handle notifications
+                try {
+                    if (hasPermission) {
+                        // Cancel existing notification
+                        await cancelHabitNotification(parseInt(id as string));
+
+                        // Schedule new notification if reminder is enabled
+                        if (reminderEnabled && reminderTime) {
+                            // Parse the reminder time from the string
+                            let reminderDate = new Date();
+                            if (reminderTime.includes(':')) {
+                                // It's a time string like "09:00" or "15:30"
+                                const [hours, minutes] = reminderTime.split(':').map(Number);
+                                reminderDate.setHours(hours);
+                                reminderDate.setMinutes(minutes);
+                            } else {
+                                // It's a relative time like "15 minutes before"
+                                const now = new Date();
+                                if (reminderTime.includes("1 minute")) {
+                                    reminderDate = new Date(now.getTime() + 60000);
+                                } else if (reminderTime.includes("15 minutes")) {
+                                    reminderDate = new Date(now.getTime() + 15 * 60000);
+                                } else if (reminderTime.includes("30 minutes")) {
+                                    reminderDate = new Date(now.getTime() + 30 * 60000);
+                                } else {
+                                    // Default to tomorrow at 9 AM
+                                    reminderDate.setDate(reminderDate.getDate() + 1);
+                                    reminderDate.setHours(9, 0, 0, 0);
+                                }
+                            }
+
+                            await scheduleHabitNotification(
+                                parseInt(id as string),
+                                habitName,
+                                description,
+                                reminderDate.toISOString(),
+                                'daily'
+                            );
+                        }
+                    }
+                } catch (notificationError) {
+                    console.error('Error handling habit notifications:', notificationError);
+                }
+
                 console.log('EditHabit: Habit updated successfully');
                 router.back();
             } catch (error) {
@@ -175,11 +224,19 @@ export default function EditHabit() {
                     />
                 </View>
 
-                <ReminderSelector
+                <UnifiedReminderSelector
+                    type="habit"
                     enabled={reminderEnabled}
-                    selected={reminderTime}
                     onToggle={setReminderEnabled}
-                    onSelect={setReminderTime}
+                    value={reminderTime ? new Date().toISOString() : null}
+                    onChange={(time) => {
+                        if (time) {
+                            setReminderTime(new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                        } else {
+                            setReminderTime(null);
+                        }
+                    }}
+                    disabled={!hasPermission}
                 />
             </View>
 

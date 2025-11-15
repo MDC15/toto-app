@@ -1,6 +1,9 @@
 import AlertModal from "@/components/common/AlertModal";
 import PrioritySelector from "@/components/tasks/PrioritySelector";
+import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
+import { NotificationPermission } from "@/components/common/NotificationPermission";
 import { useTasks } from "@/contexts/TasksContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useNavigation } from "expo-router";
@@ -8,12 +11,9 @@ import React, { useEffect, useRef, useState } from "react";
 import {
     Keyboard,
     KeyboardAvoidingView,
-    Modal,
     Platform,
-    Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -30,14 +30,15 @@ export default function AddTaskScreen() {
     const [description, setDescription] = useState(params.description as string || "");
     const [deadline, setDeadline] = useState(new Date());
     const [priority, setPriority] = useState<"High" | "Medium" | "Low" | undefined>();
-    const [reminderEnabled, setReminderEnabled] = useState(params.reminder === "true");
-    const [reminderTime, setReminderTime] = useState("15 minutes before");
+    const [reminderEnabled, setReminderEnabled] = useState(false);
+    const [reminderTime, setReminderTime] = useState<string | null>(null);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
+    const { hasPermission, scheduleTaskNotification } = useNotifications();
 
     // Track initial state for change detection
     const initialDeadline = useRef(new Date());
-    const initialReminderEnabled = useRef(params.reminder === "true");
-    const initialReminderTime = useRef("15 minutes before");
+    const initialReminderTime = useRef<string | null>(null);
+    const initialReminderEnabled = useRef(false);
     const initialTitle = useRef(params.title as string || "");
     const initialDescription = useRef(params.description as string || "");
     const initialPriority = useRef<"High" | "Medium" | "Low" | undefined>(undefined);
@@ -45,7 +46,6 @@ export default function AddTaskScreen() {
     // ⏰ Picker states
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const [showReminderPicker, setShowReminderPicker] = useState(false);
 
     // Alert modal states
     const [alertVisible, setAlertVisible] = useState(false);
@@ -69,14 +69,14 @@ export default function AddTaskScreen() {
 
             // Check for changes across all form fields
             const hasDeadlineChanged = deadline.getTime() !== initialDeadline.current.getTime();
-            const hasReminderEnabledChanged = reminderEnabled !== initialReminderEnabled.current;
             const hasReminderTimeChanged = reminderTime !== initialReminderTime.current;
+            const hasReminderEnabledChanged = reminderEnabled !== initialReminderEnabled.current;
             const hasTitleChanged = title.trim() !== initialTitle.current;
             const hasDescriptionChanged = description.trim() !== initialDescription.current;
             const hasPriorityChanged = priority !== initialPriority.current;
 
             const hasUnsavedChanges = hasTitleChanged || hasDescriptionChanged || hasPriorityChanged ||
-                hasDeadlineChanged || hasReminderEnabledChanged || hasReminderTimeChanged;
+                hasDeadlineChanged || hasReminderTimeChanged || hasReminderEnabledChanged;
 
             if (!hasUnsavedChanges) {
                 return;
@@ -90,17 +90,7 @@ export default function AddTaskScreen() {
         });
 
         return unsubscribe;
-    }, [navigation, title, description, priority, deadline, reminderEnabled, reminderTime, isCreatingTask]);
-
-    // ⏳ Reminder options
-    const reminderOptions = [
-        "1 minute before",
-        "5 minutes before",
-        "15 minutes before",
-        "30 minutes before",
-        "1 hour before",
-        "1 day before",
-    ];
+    }, [navigation, title, description, priority, deadline, reminderTime, reminderEnabled, isCreatingTask]);
 
     // 🕓 Format time
     const formatTime = (d: Date) => {
@@ -153,8 +143,6 @@ export default function AddTaskScreen() {
     // ✅ Add Task
     const handleAddTask = () => {
         Keyboard.dismiss();
-
-        // Set creating task state to prevent hardware back button conflicts
         setIsCreatingTask(true);
 
         // Validation
@@ -169,15 +157,39 @@ export default function AddTaskScreen() {
             return;
         }
 
-        // Add task
+        // Add task with reminder only if enabled and has time
+        const reminder = reminderEnabled && reminderTime ? reminderTime : null;
+
         addTask({
             title,
             description,
             deadline: deadline.toISOString(),
             priority,
             date: undefined,
-            due: undefined
+            due: undefined,
+            reminder: reminder || undefined
         });
+
+        // Schedule notification if reminder is set and user has permission
+        const scheduleNotification = async () => {
+            if (reminder && hasPermission) {
+                try {
+                    // Get the task ID from the addTask result (assuming it returns the new task)
+                    const newTaskId = Date.now(); // Temporary ID - in real app this would come from addTask
+
+                    await scheduleTaskNotification(
+                        newTaskId,
+                        title,
+                        description,
+                        deadline.toISOString()
+                    );
+
+                    console.log('✅ Task notification scheduled successfully');
+                } catch (error) {
+                    console.error('❌ Failed to schedule task notification:', error);
+                }
+            }
+        };
 
         // Update initial state to current state to prevent future unsaved changes warnings
         initialTitle.current = title;
@@ -187,21 +199,29 @@ export default function AddTaskScreen() {
         initialReminderEnabled.current = reminderEnabled;
         initialReminderTime.current = reminderTime;
 
+        // Schedule notification
+        scheduleNotification();
+
         // Create a function to clear form and close modal
         const clearFormAndClose = () => {
             // Clear form fields after successful creation
             setTitle('');
             setDescription('');
             setPriority(undefined);
-            setReminderEnabled(initialReminderEnabled.current);
-            setReminderTime(initialReminderTime.current);
+            setReminderEnabled(false);
+            setReminderTime(null);
             setDeadline(new Date());
             setIsCreatingTask(false);
             setAlertVisible(false);
         };
 
+        // Create success message
+        const successMessage = reminder && hasPermission
+            ? 'Task created successfully! Reminder notification scheduled.'
+            : 'Task created successfully!';
+
         // Show success alert with single OK button - no navigation and clear form
-        showAlert('success', 'Task Created', 'Task created successfully!', clearFormAndClose, clearFormAndClose, '', 'OK');
+        showAlert('success', 'Task Created', successMessage, clearFormAndClose, clearFormAndClose, '', 'OK');
     };
 
     // Handle back button press
@@ -216,6 +236,9 @@ export default function AddTaskScreen() {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
+                {/* Notification Permission */}
+                <NotificationPermission showFullScreen={false} />
+
                 {/* 📝 Title */}
                 <Text style={styles.label}>Task title</Text>
                 <TextInput
@@ -285,30 +308,26 @@ export default function AddTaskScreen() {
                 <Text style={styles.label}>Priority</Text>
                 <PrioritySelector value={priority} onChange={setPriority} />
 
-                {/* 🔔 Reminder */}
-                <View style={styles.reminderHeader}>
-                    <Text style={styles.label}>Reminder</Text>
-                    <Switch
-                        value={reminderEnabled}
-                        onValueChange={setReminderEnabled}
-                        trackColor={{ false: "#ddd", true: "#fdba74" }}
-                        thumbColor={reminderEnabled ? "#f97316" : "#fff"}
-                    />
-                </View>
-
-                {reminderEnabled && (
-                    <TouchableOpacity
-                        style={styles.dropdown}
-                        onPress={() => setShowReminderPicker(true)}
-                    >
-                        <Text style={styles.dropdownText}>{reminderTime}</Text>
-                        <Feather name="chevron-down" size={20} color="#555" />
-                    </TouchableOpacity>
-                )}
+                {/* 🔔 Unified Reminder Selector */}
+                <UnifiedReminderSelector
+                    type="task"
+                    enabled={reminderEnabled}
+                    onToggle={setReminderEnabled}
+                    value={reminderTime}
+                    onChange={setReminderTime}
+                    mainTime={deadline.toISOString()}
+                    disabled={!hasPermission || isCreatingTask}
+                />
 
                 {/* ➕ Add Button */}
-                <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
-                    <Text style={styles.addButtonText}>+ Add Task</Text>
+                <TouchableOpacity
+                    style={[styles.addButton, isCreatingTask && styles.addButtonDisabled]}
+                    onPress={handleAddTask}
+                    disabled={isCreatingTask}
+                >
+                    <Text style={styles.addButtonText}>
+                        {isCreatingTask ? 'Creating...' : '+ Add Task'}
+                    </Text>
                 </TouchableOpacity>
             </ScrollView>
 
@@ -324,44 +343,6 @@ export default function AddTaskScreen() {
                 onCancel={onCancelAction || (() => setAlertVisible(false))}
                 onClose={() => setAlertVisible(false)}
             />
-
-            {/* 🪄 Reminder Modal */}
-            <Modal
-                visible={showReminderPicker}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowReminderPicker(false)}
-            >
-                <Pressable
-                    style={styles.modalOverlay}
-                    onPress={() => setShowReminderPicker(false)}
-                >
-                    <View style={styles.modalContent}>
-                        {reminderOptions.map((opt) => (
-                            <TouchableOpacity
-                                key={opt}
-                                style={[
-                                    styles.modalOption,
-                                    opt === reminderTime && styles.modalOptionActive,
-                                ]}
-                                onPress={() => {
-                                    setReminderTime(opt);
-                                    setShowReminderPicker(false);
-                                }}
-                            >
-                                <Text
-                                    style={[
-                                        styles.modalOptionText,
-                                        opt === reminderTime && styles.modalOptionTextActive,
-                                    ]}
-                                >
-                                    {opt}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </Pressable>
-            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -392,45 +373,15 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     boxText: { marginLeft: 8, fontSize: 15, color: "#111" },
-    reminderHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 10,
-    },
-    dropdown: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderWidth: 1,
-        borderColor: "#d1d5db",
-        borderRadius: 10,
-        paddingHorizontal: 15,
-        paddingVertical: 12,
-        marginBottom: 25,
-    },
-    dropdownText: { fontSize: 15, color: "#111" },
     addButton: {
         backgroundColor: "#f97316",
         paddingVertical: 15,
         borderRadius: 10,
         alignItems: "center",
+        marginTop: 20,
+    },
+    addButtonDisabled: {
+        opacity: 0.6,
     },
     addButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.3)",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    modalContent: { backgroundColor: "#fff", borderRadius: 12, width: "80%", paddingVertical: 10 },
-    modalOption: {
-        paddingVertical: 14,
-        paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-    },
-    modalOptionText: { fontSize: 16, color: "#111" },
-    modalOptionActive: { backgroundColor: "#f97316" },
-    modalOptionTextActive: { color: "#fff" },
 });

@@ -1,6 +1,7 @@
 import { responsive } from '@/constants/theme';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { UserProvider } from '@/contexts/UserContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   DarkTheme,
@@ -33,33 +34,35 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <UserProvider>
-          <TasksProvider>
-            <Stack
-              screenOptions={{
-                headerTitleAlign: 'center',
-                headerStyle: {
-                  backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
-                },
-                headerTintColor: colorScheme === 'dark' ? '#fff' : '#000',
-                headerTitleStyle: { fontWeight: '600', fontSize: responsive.fontSize(24) },
-              }}
-            >
-              <Stack.Screen name="index" options={{ headerShown: false, }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="pages/permission" options={{ headerShown: false, title: 'Add New Task Template', headerLeft: () => null }} />
-              <Stack.Screen name="pages/addtask" options={{ headerShown: true, title: 'Add New Task', headerLeft: () => null }} />
-              <Stack.Screen name="pages/edittask" options={{ headerShown: true, title: 'Edit Task', headerLeft: () => null }} />
-              <Stack.Screen name="pages/templates" options={{ headerShown: true, title: 'Templates', headerLeft: () => null }} />
-              <Stack.Screen name="pages/createevent" options={{ headerShown: true, title: 'Create Event', headerLeft: () => null }} />
-              <Stack.Screen name="pages/editevent" options={{ headerShown: true, title: 'Edit Event', headerLeft: () => null }} />
-              <Stack.Screen name="pages/createhabit" options={{ headerShown: true, title: 'Create Habits', headerLeft: () => null }} />
-              <Stack.Screen name="pages/viewhabit" options={{ headerShown: true, title: 'Habit Details', headerLeft: () => null }} />
-              <Stack.Screen name="pages/edithabit" options={{ headerShown: true, title: 'Edit Habit', headerLeft: () => null }} />
-              <Stack.Screen name="pages/settings" options={{ headerShown: true, title: 'Settings' }} />
-              <Stack.Screen name="pages/premium" options={{ headerShown: true, title: 'Premium' }} />
-            </Stack>
-            <StatusBar style="auto" />
-          </TasksProvider>
+          <NotificationProvider>
+            <TasksProvider>
+              <Stack
+                screenOptions={{
+                  headerTitleAlign: 'center',
+                  headerStyle: {
+                    backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
+                  },
+                  headerTintColor: colorScheme === 'dark' ? '#fff' : '#000',
+                  headerTitleStyle: { fontWeight: '600', fontSize: responsive.fontSize(24) },
+                }}
+              >
+                <Stack.Screen name="index" options={{ headerShown: false, }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="pages/permission" options={{ headerShown: false, title: 'Add New Task Template', headerLeft: () => null }} />
+                <Stack.Screen name="pages/addtask" options={{ headerShown: true, title: 'Add New Task', headerLeft: () => null }} />
+                <Stack.Screen name="pages/edittask" options={{ headerShown: true, title: 'Edit Task', headerLeft: () => null }} />
+                <Stack.Screen name="pages/templates" options={{ headerShown: true, title: 'Templates', headerLeft: () => null }} />
+                <Stack.Screen name="pages/createevent" options={{ headerShown: true, title: 'Create Event', headerLeft: () => null }} />
+                <Stack.Screen name="pages/editevent" options={{ headerShown: true, title: 'Edit Event', headerLeft: () => null }} />
+                <Stack.Screen name="pages/createhabit" options={{ headerShown: true, title: 'Create Habits', headerLeft: () => null }} />
+                <Stack.Screen name="pages/viewhabit" options={{ headerShown: true, title: 'Habit Details', headerLeft: () => null }} />
+                <Stack.Screen name="pages/edithabit" options={{ headerShown: true, title: 'Edit Habit', headerLeft: () => null }} />
+                <Stack.Screen name="pages/settings" options={{ headerShown: true, title: 'Settings' }} />
+                <Stack.Screen name="pages/premium" options={{ headerShown: true, title: 'Premium' }} />
+              </Stack>
+              <StatusBar style="auto" />
+            </TasksProvider>
+          </NotificationProvider>
         </UserProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

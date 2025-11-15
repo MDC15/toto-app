@@ -1,5 +1,7 @@
 import { getEvents, updateEvent } from "@/db/database";
 import AlertModal from "@/components/common/AlertModal";
+import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,7 +17,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import ReminderSelector from "@/components/common/ReminderSelector";
 
 export default function EditEventScreen() {
     const router = useRouter();
@@ -26,7 +27,8 @@ export default function EditEventScreen() {
     const [startTime, setStartTime] = useState(new Date());
     const [endTime, setEndTime] = useState(new Date());
     const [reminderEnabled, setReminderEnabled] = useState(false);
-    const [reminderTime, setReminderTime] = useState("5 minutes before");
+    const [reminderTime, setReminderTime] = useState<string | null>(null);
+    const { hasPermission, scheduleEventNotification, cancelEventNotification } = useNotifications();
 
     // Diagnostic logging for reminder state
     React.useEffect(() => {
@@ -66,7 +68,7 @@ export default function EditEventScreen() {
                     setStartTime(new Date(event.start_time));
                     setEndTime(new Date(event.end_time));
                     setReminderEnabled(!!event.reminder);
-                    setReminderTime(event.reminder || "5 minutes before");
+                    setReminderTime(event.reminder || null);
                     setEventColor(event.color || "#fed7aa");
                 }
             } catch (error) {
@@ -92,6 +94,7 @@ export default function EditEventScreen() {
         // Success action
         const updateEventAction = async () => {
             try {
+                // Update the event
                 await updateEvent(
                     parseInt(id as string),
                     title,
@@ -99,9 +102,40 @@ export default function EditEventScreen() {
                     endTime.toISOString(),
                     description,
                     false, // completed
-                    reminderEnabled ? reminderTime : undefined,
+                    reminderEnabled && reminderTime ? reminderTime : undefined,
                     eventColor
                 );
+
+                // Handle notifications
+                try {
+                    if (hasPermission) {
+                        // Cancel existing notification
+                        await cancelEventNotification(parseInt(id as string));
+
+                        // Schedule new notification if reminder is enabled
+                        if (reminderEnabled && reminderTime) {
+                            // Parse reminder time and calculate offset
+                            let reminderOffset: { hours?: number; minutes?: number } = { minutes: 5 };
+
+                            if (reminderTime.includes("1 minute")) reminderOffset = { minutes: 1 };
+                            else if (reminderTime.includes("15 minutes")) reminderOffset = { minutes: 15 };
+                            else if (reminderTime.includes("30 minutes")) reminderOffset = { minutes: 30 };
+                            else if (reminderTime.includes("1 hour")) reminderOffset = { hours: 1 };
+                            else if (reminderTime.includes("2 hours")) reminderOffset = { hours: 2 };
+
+                            await scheduleEventNotification(
+                                parseInt(id as string),
+                                title,
+                                description,
+                                startTime.toISOString(),
+                                reminderOffset
+                            );
+                        }
+                    }
+                } catch (notificationError) {
+                    console.error('Error handling event notifications:', notificationError);
+                }
+
                 router.back();
             } catch (error) {
                 console.error(error);
@@ -141,11 +175,14 @@ export default function EditEventScreen() {
                     textAlignVertical="top"
                 />
 
-                <ReminderSelector
+                <UnifiedReminderSelector
+                    type="event"
                     enabled={reminderEnabled}
-                    selected={reminderTime}
                     onToggle={setReminderEnabled}
-                    onSelect={setReminderTime}
+                    value={reminderTime}
+                    onChange={setReminderTime}
+                    mainTime={startTime.toISOString()}
+                    disabled={!hasPermission}
                 />
 
                 <Text style={styles.label}>Event Color</Text>

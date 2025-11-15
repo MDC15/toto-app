@@ -1,7 +1,8 @@
 import AlertModal from '@/components/common/AlertModal';
 import DatePicker from '@/components/common/DatePicker';
-import ReminderSelector from '@/components/common/ReminderSelector';
+import { UnifiedReminderSelector } from '@/components/common/UnifiedReminderSelector';
 import ColorPick from '@/components/habits/ColorPick';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { addHabit } from '@/db/database';
 import { getDateString } from '@/utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,9 +16,10 @@ export default function CreateHabit() {
     const [description, setDescription] = useState(params.description as string || '');
     const [selectedColor, setSelectedColor] = useState('#ea580c');
     const [reminderEnabled, setReminderEnabled] = useState(() => params.reminder === "true");
-    const [reminderTime, setReminderTime] = useState('15 minutes before');
+    const [reminderTime, setReminderTime] = useState<string | null>('15 minutes before');
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState<Date | null>(null);
+    const { hasPermission, scheduleHabitNotification } = useNotifications();
 
     // Diagnostic logging for reminder state
     React.useEffect(() => {
@@ -82,11 +84,19 @@ export default function CreateHabit() {
                     />
                 </View>
 
-                <ReminderSelector
+                <UnifiedReminderSelector
+                    type="habit"
                     enabled={reminderEnabled}
-                    selected={reminderTime}
                     onToggle={setReminderEnabled}
-                    onSelect={setReminderTime}
+                    value={reminderTime ? new Date().toISOString() : null}
+                    onChange={(time) => {
+                        if (time) {
+                            setReminderTime(new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                        } else {
+                            setReminderTime(null);
+                        }
+                    }}
+                    disabled={!hasPermission}
                 />
             </View>
 
@@ -130,7 +140,7 @@ export default function CreateHabit() {
         }
 
         try {
-            await addHabit(
+            const newHabitId = await addHabit(
                 habitName,
                 description,
                 'daily', // Default frequency
@@ -138,9 +148,43 @@ export default function CreateHabit() {
                 selectedColor,
                 getDateString(startDate),
                 endDate ? getDateString(endDate) : undefined,
-                reminderEnabled ? reminderTime : undefined,
+                reminderEnabled && reminderTime ? reminderTime : undefined,
                 false
             );
+
+            // Schedule notification if reminder is enabled and we have a valid reminder time
+            if (reminderEnabled && reminderTime && hasPermission && newHabitId) {
+                // Parse the reminder time from the string
+                let reminderDate = new Date();
+                if (reminderTime.includes(':')) {
+                    // It's a time string like "09:00" or "15:30"
+                    const [hours, minutes] = reminderTime.split(':').map(Number);
+                    reminderDate.setHours(hours);
+                    reminderDate.setMinutes(minutes);
+                } else {
+                    // It's a relative time like "15 minutes before"
+                    const now = new Date();
+                    if (reminderTime.includes("1 minute")) {
+                        reminderDate = new Date(now.getTime() + 60000);
+                    } else if (reminderTime.includes("15 minutes")) {
+                        reminderDate = new Date(now.getTime() + 15 * 60000);
+                    } else if (reminderTime.includes("30 minutes")) {
+                        reminderDate = new Date(now.getTime() + 30 * 60000);
+                    } else {
+                        // Default to tomorrow at 9 AM
+                        reminderDate.setDate(reminderDate.getDate() + 1);
+                        reminderDate.setHours(9, 0, 0, 0);
+                    }
+                }
+
+                await scheduleHabitNotification(
+                    newHabitId,
+                    habitName,
+                    description,
+                    reminderDate.toISOString(),
+                    'daily'
+                );
+            }
 
             // Create a function to clear form and close modal
             const clearFormAndClose = () => {

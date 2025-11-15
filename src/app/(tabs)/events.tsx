@@ -11,6 +11,7 @@ import { deleteEvent, getEvents, updateEvent } from "@/db/database";
 import { getNow } from "@/utils/dateUtils";
 import { useFocusEffect } from '@react-navigation/native';
 import { format } from 'date-fns';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 const getIconForTitle = (title: string): string => {
     if (title.toLowerCase().includes('read')) return 'book-open-page-variant';
@@ -23,6 +24,7 @@ const getIconForTitle = (title: string): string => {
 
 export default function EventsScreen() {
     const { selectedDate: selectedDateParam } = useLocalSearchParams<{ selectedDate?: string }>();
+    const { cancelEventNotification } = useNotifications();
     const [selectedDate, setSelectedDate] = React.useState(getNow());
     const [events, setEvents] = useState<any[]>([]);
 
@@ -98,6 +100,8 @@ export default function EventsScreen() {
                     text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
+                        // Cancel notification before deleting
+                        await cancelEventNotification(eventId);
                         await deleteEvent(eventId);
                         await fetchEvents();
                     }

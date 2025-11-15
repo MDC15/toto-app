@@ -1,9 +1,10 @@
+import { useNotifications } from "@/contexts/NotificationContext";
+import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Alert,
     Image,
     StyleSheet,
     Text,
@@ -18,6 +19,7 @@ interface PermissionState {
 
 export default function NotificationPermissionScreen() {
     const router = useRouter();
+    const { hasPermission } = useNotifications();
     const [state, setState] = useState<PermissionState>({
         checking: false,
         requesting: false,
@@ -26,6 +28,14 @@ export default function NotificationPermissionScreen() {
     useEffect(() => {
         checkPermission();
     }, []);
+
+    // If permission is already granted, navigate away
+    useEffect(() => {
+        if (hasPermission) {
+            console.log('✅ Permission already granted, navigating to main app');
+            router.push("/(tabs)");
+        }
+    }, [hasPermission, router]);
 
     // ✅ Kiểm tra quyền thông báo
     const checkPermission = async () => {
@@ -36,7 +46,6 @@ export default function NotificationPermissionScreen() {
             console.log("Notification permission:", existingStatus);
         } catch (error) {
             console.error("Error checking notification permission:", error);
-            Alert.alert("Error", "Failed to check notification permissions");
         } finally {
             setState((prev) => ({ ...prev, checking: false }));
         }
@@ -56,28 +65,16 @@ export default function NotificationPermissionScreen() {
             });
 
             if (status === 'granted') {
-                // Gửi thông báo test
-                await Notifications.scheduleNotificationAsync({
-                    content: {
-                        title: "🎉 Notifications Enabled!",
-                        body: "You'll now receive reminders and updates.",
-                        sound: 'default',
-                    },
-                    trigger: null, // Send immediately
-                });
-
-                Alert.alert("✅ Success", "Notifications have been enabled!");
+                console.log('✅ Permission granted! Notifications are now active');
+                // Navigation will happen automatically via useEffect when hasPermission becomes true
                 router.push("/(tabs)");
             } else {
-                Alert.alert(
-                    "🚫 Notifications Disabled",
-                    "You can enable notifications later in your device settings."
-                );
+                console.log('❌ Permission denied, still navigating to main app');
                 router.push("/(tabs)");
             }
         } catch (error) {
             console.error("Error requesting notification permission:", error);
-            Alert.alert("Error", "Failed to request notification permissions.");
+            router.push("/(tabs)");
         } finally {
             setState((prev) => ({ ...prev, requesting: false }));
         }
@@ -95,9 +92,27 @@ export default function NotificationPermissionScreen() {
             <Text style={styles.title}>Enable Notifications</Text>
 
             <Text style={styles.subtitle}>
-                Allow notifications so we can remind you at the right time!{"\n"}
-                Daily tasks, goals, and helpful reminders
+                Stay updated with reminders for tasks, events, and daily habits.
+                Never miss what&apos;s important.
             </Text>
+
+            <View style={styles.benefitsContainer}>
+                <View style={styles.benefit}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={{ marginRight: 10 }} />
+                    <Text style={styles.benefitText}>Task deadline reminders</Text>
+                </View>
+
+                <View style={styles.benefit}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={{ marginRight: 10 }} />
+                    <Text style={styles.benefitText}>Event start notifications</Text>
+                </View>
+
+                <View style={styles.benefit}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={{ marginRight: 10 }} />
+                    <Text style={styles.benefitText}>Daily habit reminders</Text>
+                </View>
+            </View>
+
 
             <TouchableOpacity
                 style={[styles.button, state.requesting && styles.buttonDisabled]}
@@ -107,12 +122,12 @@ export default function NotificationPermissionScreen() {
                 {state.requesting ? (
                     <ActivityIndicator color="#fff" />
                 ) : (
-                    <Text style={styles.buttonText}>Allow Notifications</Text>
+                    <Text style={styles.buttonText}>Enable Notifications</Text>
                 )}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => router.push("/(tabs)")}>
-                <Text style={styles.later}>Maybe later</Text>
+                <Text style={styles.later}>Skip for now</Text>
             </TouchableOpacity>
         </View>
     );
@@ -173,5 +188,24 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         fontSize: 14,
         textDecorationLine: "underline",
+    },
+    benefitsContainer: {
+        marginVertical: 20,
+        width: '100%',
+    },
+    benefit: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+        paddingHorizontal: 10,
+    },
+    benefitIcon: {
+        fontSize: 16,
+        marginRight: 10,
+    },
+    benefitText: {
+        fontSize: 14,
+        color: "#666",
+        fontWeight: '500',
     },
 });

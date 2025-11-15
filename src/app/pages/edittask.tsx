@@ -1,5 +1,7 @@
 import AlertModal from "@/components/common/AlertModal";
+import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
 import PrioritySelector from "@/components/tasks/PrioritySelector";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { useTasks } from "@/contexts/TasksContext";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -8,12 +10,9 @@ import React, { useEffect, useRef, useState } from "react";
 import {
     Keyboard,
     KeyboardAvoidingView,
-    Modal,
     Platform,
-    Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -35,7 +34,8 @@ export default function EditTaskScreen() {
         "Medium"
     );
     const [reminderEnabled, setReminderEnabled] = useState(false);
-    const [reminderTime, setReminderTime] = useState("15 minutes before");
+    const [reminderTime, setReminderTime] = useState<string | null>(null);
+    const { hasPermission, scheduleTaskNotification, cancelTaskNotification } = useNotifications();
 
     // Alert modal states
     const [alertVisible, setAlertVisible] = useState(false);
@@ -55,12 +55,20 @@ export default function EditTaskScreen() {
                 setDeadline(new Date());
             }
             setPriority(task.priority);
+
+            // Load reminder data
+            if (task.reminder) {
+                setReminderEnabled(true);
+                setReminderTime(task.reminder);
+            } else {
+                setReminderEnabled(false);
+                setReminderTime(null);
+            }
         }
     }, [taskFromContext]);
 
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const [showReminderPicker, setShowReminderPicker] = useState(false);
 
     const descRef = useRef<TextInput>(null);
 
@@ -72,16 +80,6 @@ export default function EditTaskScreen() {
         setPendingAction(() => action || null);
         setAlertVisible(true);
     };
-
-    // Handle back button press
-
-    const reminderOptions = [
-        "5 minutes before",
-        "15 minutes before",
-        "30 minutes before",
-        "1 hour before",
-        "1 day before",
-    ];
 
     const formatTime = (d: Date) => {
         let h = d.getHours();
@@ -105,14 +103,36 @@ export default function EditTaskScreen() {
         }
 
         // Success action
-        const saveTask = () => {
+        const saveTask = async () => {
             if (idParam) {
+                // Update the task
                 updateTask(idParam, {
                     title,
                     description,
                     due: deadline.toISOString(),
                     priority,
+                    reminder: reminderEnabled && reminderTime ? reminderTime : undefined,
                 });
+
+                // Handle notifications
+                try {
+                    if (hasPermission) {
+                        // Cancel existing notification
+                        await cancelTaskNotification(idParam);
+                        
+                        // Schedule new notification if reminder is enabled
+                        if (reminderEnabled && reminderTime) {
+                            await scheduleTaskNotification(
+                                idParam,
+                                title,
+                                description,
+                                deadline.toISOString()
+                            );
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error handling task notifications:', error);
+                }
             }
             router.back();
         };
@@ -220,26 +240,16 @@ export default function EditTaskScreen() {
                 <Text style={styles.label}>Priority</Text>
                 <PrioritySelector value={priority} onChange={setPriority} />
 
-                {/* 🔔 Reminder */}
-                <View style={styles.reminderHeader}>
-                    <Text style={styles.label}>Reminder</Text>
-                    <Switch
-                        value={reminderEnabled}
-                        onValueChange={setReminderEnabled}
-                        trackColor={{ false: "#ddd", true: "#fdba74" }}
-                        thumbColor={reminderEnabled ? "#f97316" : "#fff"}
-                    />
-                </View>
-
-                {reminderEnabled && (
-                    <TouchableOpacity
-                        style={styles.dropdown}
-                        onPress={() => setShowReminderPicker(true)}
-                    >
-                        <Text style={styles.dropdownText}>{reminderTime}</Text>
-                        <Feather name="chevron-down" size={20} color="#555" />
-                    </TouchableOpacity>
-                )}
+                {/* 🔔 Unified Reminder Selector */}
+                <UnifiedReminderSelector
+                    type="task"
+                    enabled={reminderEnabled}
+                    onToggle={setReminderEnabled}
+                    value={reminderTime}
+                    onChange={setReminderTime}
+                    mainTime={deadline.toISOString()}
+                    disabled={!hasPermission}
+                />
 
                 {/* ➕ Add Button */}
                 <TouchableOpacity style={styles.addButton} onPress={handleSaveTask}>
@@ -257,44 +267,6 @@ export default function EditTaskScreen() {
                 onCancel={() => setAlertVisible(false)}
                 onClose={() => setAlertVisible(false)}
             />
-
-            {/* 🪄 Reminder Modal */}
-            <Modal
-                visible={showReminderPicker}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowReminderPicker(false)}
-            >
-                <Pressable
-                    style={styles.modalOverlay}
-                    onPress={() => setShowReminderPicker(false)}
-                >
-                    <View style={styles.modalContent}>
-                        {reminderOptions.map((opt) => (
-                            <TouchableOpacity
-                                key={opt}
-                                style={[
-                                    styles.modalOption,
-                                    opt === reminderTime && styles.modalOptionActive,
-                                ]}
-                                onPress={() => {
-                                    setReminderTime(opt);
-                                    setShowReminderPicker(false);
-                                }}
-                            >
-                                <Text
-                                    style={[
-                                        styles.modalOptionText,
-                                        opt === reminderTime && styles.modalOptionTextActive,
-                                    ]}
-                                >
-                                    {opt}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </Pressable>
-            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -325,24 +297,6 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     boxText: { marginLeft: 8, fontSize: 15, color: "#111" },
-    reminderHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 10,
-    },
-    dropdown: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderWidth: 1,
-        borderColor: "#d1d5db",
-        borderRadius: 10,
-        paddingHorizontal: 15,
-        paddingVertical: 12,
-        marginBottom: 25,
-    },
-    dropdownText: { fontSize: 15, color: "#111" },
     addButton: {
         backgroundColor: "#f97316",
         paddingVertical: 15,
@@ -350,20 +304,4 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     addButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.3)",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    modalContent: { backgroundColor: "#fff", borderRadius: 12, width: "80%", paddingVertical: 10 },
-    modalOption: {
-        paddingVertical: 14,
-        paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-    },
-    modalOptionText: { fontSize: 16, color: "#111" },
-    modalOptionActive: { backgroundColor: "#f97316" },
-    modalOptionTextActive: { color: "#fff" },
 });

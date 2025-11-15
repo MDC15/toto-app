@@ -30,6 +30,7 @@ export default function HomeScreen() {
     const [events, setEvents] = useState<TaskItem[]>([]);
     const [selectedDate, setSelectedDate] = React.useState(new Date());
     const [showNameModal, setShowNameModal] = useState(false);
+    const [eventDates, setEventDates] = useState<{ date: string; color?: string }[]>([]);
 
     useEffect(() => {
         if (!isLoading && !userName) {
@@ -61,6 +62,16 @@ export default function HomeScreen() {
             };
         });
         setEvents(formattedEvents);
+
+        // Extract event dates for calendar dots
+        const datesWithEvents = dbEvents.map((event: any) => {
+            const startTime = new Date(event.start_time);
+            return {
+                date: format(startTime, 'yyyy-MM-dd'),
+                color: event.color || '#cc5f24' // Darker orange color
+            };
+        });
+        setEventDates(datesWithEvents);
     };
 
     useFocusEffect(
@@ -96,7 +107,15 @@ export default function HomeScreen() {
         >
             <GreetingCard username={userName || 'User'} />
             <CalendarCard
-                onDateSelect={setSelectedDate}
+                onDateSelect={(date) => {
+                    setSelectedDate(date);
+                    // Navigate to events tab with selected date
+                    router.push({
+                        pathname: '/(tabs)/events',
+                        params: { selectedDate: date.toISOString() }
+                    });
+                }}
+                markedData={eventDates}
             />
             <TaskSection
                 title={`${selectedDateString === todayString ? 'Today\'s' : 'Selected Date'} Tasks`}
