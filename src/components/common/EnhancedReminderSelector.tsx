@@ -151,7 +151,7 @@ export function EnhancedReminderSelector({
 
             {showSelector && (
                 <ThemedView style={styles.optionsContainer}>
-                    {reminderOptions.map((option, index) => (
+                    {reminderOptions.map((option: any, index: number) => (
                         <TouchableOpacity
                             key={index}
                             style={[

@@ -5,6 +5,7 @@ import ColorPick from '@/components/habits/ColorPick';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { addHabit } from '@/db/database';
 import { getDateString } from '@/utils/dateUtils';
+import { ReminderTime } from '@/types/reminder.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from "expo-router";
 import React, { useState } from 'react';
@@ -16,10 +17,26 @@ export default function CreateHabit() {
     const [description, setDescription] = useState(params.description as string || '');
     const [selectedColor, setSelectedColor] = useState('#ea580c');
     const [reminderEnabled, setReminderEnabled] = useState(() => params.reminder === "true");
-    const [reminderTime, setReminderTime] = useState<string | null>('15 minutes before');
+    const [reminderTime, setReminderTime] = useState<ReminderTime>(5); // Default to 5 minutes
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState<Date | null>(null);
     const { hasPermission, scheduleHabitNotification } = useNotifications();
+
+    // Validate date function to prevent invalid dates
+    const validateDate = (date: Date): boolean => {
+        return date instanceof Date && !isNaN(date.getTime());
+    };
+
+    // Safe date creation function
+    const createSafeDate = (year: number, month: number, day: number, hours: number = 0, minutes: number = 0): Date | null => {
+        try {
+            const date = new Date(year, month, day, hours, minutes, 0, 0);
+            return validateDate(date) ? date : null;
+        } catch (error) {
+            console.error('Invalid date creation:', { year, month, day, hours, minutes }, error);
+            return null;
+        }
+    };
 
     // Diagnostic logging for reminder state
     React.useEffect(() => {
@@ -88,14 +105,8 @@ export default function CreateHabit() {
                     type="habit"
                     enabled={reminderEnabled}
                     onToggle={setReminderEnabled}
-                    value={reminderTime ? new Date().toISOString() : null}
-                    onChange={(time) => {
-                        if (time) {
-                            setReminderTime(new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-                        } else {
-                            setReminderTime(null);
-                        }
-                    }}
+                    value={reminderTime as any} // Cast to string | null
+                    onChange={(value: string | null) => setReminderTime(value as any)} // Handle string | null
                     disabled={!hasPermission}
                 />
             </View>
@@ -148,42 +159,29 @@ export default function CreateHabit() {
                 selectedColor,
                 getDateString(startDate),
                 endDate ? getDateString(endDate) : undefined,
-                reminderEnabled && reminderTime ? reminderTime : undefined,
+                reminderEnabled && reminderTime ? (reminderTime as number).toString() : undefined,
                 false
             );
 
             // Schedule notification if reminder is enabled and we have a valid reminder time
             if (reminderEnabled && reminderTime && hasPermission && newHabitId) {
-                // Parse the reminder time from the string
-                let reminderDate = new Date();
-                if (reminderTime.includes(':')) {
-                    // It's a time string like "09:00" or "15:30"
-                    const [hours, minutes] = reminderTime.split(':').map(Number);
-                    reminderDate.setHours(hours);
-                    reminderDate.setMinutes(minutes);
-                } else {
-                    // It's a relative time like "15 minutes before"
-                    const now = new Date();
-                    if (reminderTime.includes("1 minute")) {
-                        reminderDate = new Date(now.getTime() + 60000);
-                    } else if (reminderTime.includes("15 minutes")) {
-                        reminderDate = new Date(now.getTime() + 15 * 60000);
-                    } else if (reminderTime.includes("30 minutes")) {
-                        reminderDate = new Date(now.getTime() + 30 * 60000);
+                try {
+                    const reminderDate = await calculateReminderDate(reminderTime);
+                    if (reminderDate && validateDate(reminderDate)) {
+                        await scheduleHabitNotification(
+                            newHabitId,
+                            habitName,
+                            description,
+                            reminderDate.toISOString(),
+                            'daily'
+                        );
                     } else {
-                        // Default to tomorrow at 9 AM
-                        reminderDate.setDate(reminderDate.getDate() + 1);
-                        reminderDate.setHours(9, 0, 0, 0);
+                        console.warn('Invalid reminder date calculated, skipping notification');
                     }
+                } catch (notificationError) {
+                    console.error('Failed to schedule notification:', notificationError);
+                    // Don't fail habit creation for notification errors
                 }
-
-                await scheduleHabitNotification(
-                    newHabitId,
-                    habitName,
-                    description,
-                    reminderDate.toISOString(),
-                    'daily'
-                );
             }
 
             // Create a function to clear form and close modal
@@ -193,7 +191,7 @@ export default function CreateHabit() {
                 setDescription('');
                 setSelectedColor('#ea580c');
                 setReminderEnabled(false);
-                setReminderTime('15 minutes before');
+                setReminderTime(5); // Reset to default 5 minutes
                 setStartDate(new Date());
                 setEndDate(null);
                 setAlertVisible(false);
@@ -202,8 +200,57 @@ export default function CreateHabit() {
             // Show success alert and clear form
             showAlert('success', 'Habit Created', 'Habit created successfully!', clearFormAndClose);
         } catch (error) {
-            console.error(error);
-            showAlert('error', 'Error', 'Could not create habit.');
+            console.error('Error creating habit:', error);
+            showAlert('error', 'Error', 'Could not create habit. Please try again.');
+        }
+    }
+
+    // Calculate reminder date with proper validation
+    async function calculateReminderDate(reminderTime: ReminderTime): Promise<Date | null> {
+        try {
+            const now = new Date();
+
+            // Handle standard reminder times (1, 5, 30 minutes)
+            if (typeof reminderTime === 'number') {
+                const reminderDate = new Date(now.getTime() + (reminderTime * 60 * 1000));
+                return validateDate(reminderDate) ? reminderDate : null;
+            }
+
+            // Handle custom reminder times
+            if (typeof reminderTime === 'object' && reminderTime !== null) {
+                const { hours, minutes } = reminderTime;
+                if (typeof hours === 'number' && typeof minutes === 'number') {
+                    const today = new Date();
+                    const reminderDate = createSafeDate(
+                        today.getFullYear(),
+                        today.getMonth(),
+                        today.getDate(),
+                        hours,
+                        minutes
+                    );
+
+                    // If time has passed today, schedule for tomorrow
+                    if (reminderDate && reminderDate <= now) {
+                        const tomorrow = new Date(today);
+                        tomorrow.setDate(today.getDate() + 1);
+                        return createSafeDate(
+                            tomorrow.getFullYear(),
+                            tomorrow.getMonth(),
+                            tomorrow.getDate(),
+                            hours,
+                            minutes
+                        );
+                    }
+
+                    return reminderDate;
+                }
+            }
+
+            console.warn('Invalid reminder time format:', reminderTime);
+            return null;
+        } catch (error) {
+            console.error('Error calculating reminder date:', error);
+            return null;
         }
     }
 }

@@ -1,392 +1,513 @@
-import {
-    calculateReminderTime,
-    cancelAllNotifications,
-    cancelNotification,
-    getDefaultReminderTimes,
-    getNotificationStatus,
-    isReminderTimeValid,
-    requestNotificationPermissions,
-    scheduleEventReminder,
-    scheduleHabitReminder,
-    scheduleTaskReminder,
-    setupNotificationListeners,
-} from "@/services/NotificationService";
 import React, {
     createContext,
     ReactNode,
     useCallback,
     useContext,
     useEffect,
-    useState,
-} from "react";
+    useMemo,
+    useRef,
+    useState
+} from 'react';
+
+import { integrationService } from '@/services/IntegrationService';
+import { notificationService } from '@/services/NotificationService';
+import { reminderService } from '@/services/ReminderService';
+import {
+    NotificationContextType,
+    ReminderConfig,
+    ReminderResult,
+    ReminderTime,
+    ReminderType,
+    StandardReminderTime
+} from '@/types/reminder.types';
 
 // ===============================
-// 🔹 Types
+// 🏗️ NOTIFICATION CONTEXT
 // ===============================
-type NotificationContextType = {
-    // Permission state
-    hasPermission: boolean;
-    requestPermission: () => Promise<boolean>;
 
-    // Scheduled notifications
-    scheduledTaskReminders: Map<number, string>; // taskId -> notificationId
-    scheduledEventReminders: Map<number, string>; // eventId -> notificationId
-    scheduledHabitReminders: Map<number, string>; // habitId -> notificationId
-
-    // Actions
-    scheduleTaskNotification: (
-        taskId: number,
-        title: string,
-        description: string,
-        deadline: string,
-        reminderOffset?: { hours?: number; minutes?: number }
-    ) => Promise<string | null>;
-
-    scheduleEventNotification: (
-        eventId: number,
-        title: string,
-        description: string,
-        startTime: string,
-        reminderOffset?: { hours?: number; minutes?: number }
-    ) => Promise<string | null>;
-
-    scheduleHabitNotification: (
-        habitId: number,
-        title: string,
-        description: string,
-        reminderTime: string,
-        frequency?: 'daily' | 'weekly' | 'custom'
-    ) => Promise<string | null>;
-
-    cancelTaskNotification: (taskId: number) => Promise<void>;
-    cancelEventNotification: (eventId: number) => Promise<void>;
-    cancelHabitNotification: (habitId: number) => Promise<void>;
-    cancelAllNotificationSchedules: () => Promise<void>;
-
-    // Utility functions
-    getDefaultReminderOptions: (type: 'task' | 'event' | 'habit') => {
-        label: string;
-        value: any;
-    }[];
-    calculateReminderTime: (
-        mainTime: string,
-        offset: { hours?: number; minutes?: number }
-    ) => string;
-    isValidReminderTime: (reminderTime: string) => boolean;
-
-    // Notification handling
-    lastNotification: any | null;
-    handleNotificationPressed: (response: any) => void;
-};
-
-// ===============================
-// 🔹 Create Context
-// ===============================
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 // ===============================
-// 🔹 Provider
+// 🔹 PROVIDER COMPONENT
 // ===============================
-export function NotificationProvider({ children }: { children: ReactNode }) {
+
+interface NotificationProviderProps {
+    children: ReactNode;
+}
+
+export function NotificationProvider({ children }: NotificationProviderProps) {
+    // ===============================
+    // 📊 STATE MANAGEMENT
+    // ===============================
+
     const [hasPermission, setHasPermission] = useState(false);
-    const [scheduledTaskReminders, setScheduledTaskReminders] = useState(new Map());
-    const [scheduledEventReminders, setScheduledEventReminders] = useState(new Map());
-    const [scheduledHabitReminders, setScheduledHabitReminders] = useState(new Map());
-    const [lastNotification, setLastNotification] = useState(null);
+    const [scheduledReminders, setScheduledReminders] = useState(new Map<number, string>());
+    const [lastNotification, setLastNotification] = useState<any | null>(null);
 
-    // Check and update permission status
-    const checkPermissionStatus = useCallback(async () => {
-        const status = await getNotificationStatus();
-        setHasPermission(status);
-        return status;
-    }, []);
+    // Use refs for stable references to prevent re-renders
+    const mountedRef = useRef(true);
+    const scheduledRemindersRef = useRef(scheduledReminders);
 
-    // Handle notification pressed
+    // Keep scheduledReminders ref in sync with state
+    useEffect(() => {
+        scheduledRemindersRef.current = scheduledReminders;
+    }, [scheduledReminders]);
+
+    // ===============================
+    // 🔧 HELPER FUNCTIONS
+    // ===============================
+
+    /**
+     * Handle notification pressed
+     */
     const handleNotificationPressed = useCallback((response: any) => {
         try {
             // Add null safety checks
-            if (!response || !response.notification || !response.notification.request || !response.notification.request.content) {
-                console.warn('⚠️ Invalid notification response structure');
+            if (!response || !response.notification || !response.notification.request) {
+                console.warn('⚠️ NotificationProvider: Invalid notification response structure');
                 return;
             }
 
-            const data = response.notification.request.content.data;
+            const data = response.notification.request.content?.data;
 
-            // Handle different notification types
-            if (data && data.type === 'task') {
-                // Navigate to task details
-                console.log('📋 Navigate to task:', data.taskId);
-            } else if (data && data.type === 'event') {
-                // Navigate to event details
-                console.log('📅 Navigate to event:', data.eventId);
-            } else if (data && data.type === 'habit') {
-                // Navigate to habit details
-                console.log('🏃 Navigate to habit:', data.habitId);
-            } else {
-                console.log('🔔 Unknown notification type:', data);
+            if (data) {
+                console.log('📋 NotificationProvider: Processing notification data:', data);
+
+                // Handle different notification types
+                switch (data.type) {
+                    case 'task':
+                        console.log('📋 Navigate to task:', data.entityId);
+                        // Navigation logic would go here
+                        break;
+                    case 'event':
+                        console.log('📅 Navigate to event:', data.entityId);
+                        // Navigation logic would go here
+                        break;
+                    case 'habit':
+                        console.log('🏃 Navigate to habit:', data.entityId);
+                        // Navigation logic would go here
+                        break;
+                    default:
+                        console.log('🔔 Unknown notification type:', data.type);
+                }
             }
         } catch (error) {
-            console.error('❌ Error handling notification press:', error);
+            console.error('❌ NotificationProvider: Error handling notification press:', error);
         }
     }, []);
 
-    // Check notification status on mount and setup listeners
+    // ===============================
+    // 🚀 INITIALIZATION
+    // ===============================
+
     useEffect(() => {
+        let cleanup: (() => void) | undefined;
+
         const initializeNotifications = async () => {
-            const status = await checkPermissionStatus();
-            console.log('🚀 Notification context initialized with permission:', status);
+            try {
+                // Check permission status
+                const permission = await notificationService.getNotificationStatus();
+                if (mountedRef.current) {
+                    setHasPermission(permission);
+                }
+
+                console.log('🚀 NotificationProvider: Initialized with permission:', permission);
+
+                // Setup notification listeners
+                const listenerCleanup = notificationService.setupNotificationListeners(
+                    // Notification received
+                    (notification) => {
+                        if (mountedRef.current) {
+                            console.log('📱 NotificationProvider: Notification received:', notification);
+                            setLastNotification(notification);
+                        }
+                    },
+                    // Notification pressed
+                    (response) => {
+                        if (mountedRef.current) {
+                            console.log('👆 NotificationProvider: Notification pressed:', response);
+                            handleNotificationPressed(response);
+                        }
+                    }
+                );
+
+                cleanup = listenerCleanup;
+            } catch (error) {
+                console.error('❌ NotificationProvider: Initialization error:', error);
+            }
         };
 
+        mountedRef.current = true;
         initializeNotifications();
 
-        // Setup notification listeners
-        const cleanup = setupNotificationListeners(
-            (notification) => {
-                console.log('📱 Notification received:', notification);
-                setLastNotification(notification);
-            },
-            (response) => {
-                console.log('👆 Notification pressed:', response);
-                handleNotificationPressed(response);
+        return () => {
+            mountedRef.current = false;
+            if (cleanup) {
+                cleanup();
             }
-        );
+        };
+    }, [handleNotificationPressed]);
 
-        return cleanup;
-    }, [checkPermissionStatus, handleNotificationPressed]); // ✅ thêm dependencies
+    // ===============================
+    // 🎯 CORE FUNCTIONS
+    // ===============================
 
+    /**
+     * Setup a reminder using the integration service
+     */
+    const setupReminder = useCallback(async (config: ReminderConfig): Promise<ReminderResult> => {
+        if (!mountedRef.current) {
+            return { success: false, reminderTime: '' };
+        }
 
-    // Request permission
-    const requestPermission = useCallback(async (): Promise<boolean> => {
-        const granted = await requestNotificationPermissions();
-        setHasPermission(granted);
-        console.log('🔐 Permission request result:', granted);
-        return granted;
+        console.log('🔔 NotificationProvider: Setting up reminder', {
+            type: config.type,
+            id: config.id,
+            enabled: config.enabled
+        });
+
+        // If reminder is disabled, cancel existing and return success
+        if (!config.enabled) {
+            const cancelReminderFn = (id: number) => scheduledRemindersRef.current.has(id);
+            if (cancelReminderFn(config.id)) {
+                // Inline cancellation logic to avoid dependency
+                try {
+                    const notificationId = scheduledRemindersRef.current.get(config.id);
+                    if (notificationId) {
+                        await notificationService.cancelNotification(notificationId);
+                        setScheduledReminders(prev => {
+                            const newMap = new Map(prev);
+                            newMap.delete(config.id);
+                            return newMap;
+                        });
+                        integrationService.unregisterScheduledReminder(config.id);
+                    }
+                } catch (error) {
+                    console.error('❌ NotificationProvider: Error canceling reminder:', error);
+                }
+            }
+            return {
+                success: true,
+                reminderTime: ''
+            };
+        }
+
+        // Use integration service to setup the reminder
+        const result = await integrationService.setupReminder(config);
+
+        if (mountedRef.current && result.success && result.notificationId) {
+            // Update internal state
+            setScheduledReminders(prev => new Map(prev.set(config.id, result.notificationId!)));
+            integrationService.registerScheduledReminder(config.id, result.notificationId!);
+        }
+
+        return result;
     }, []);
 
-    // Schedule task notification
+    /**
+     * Cancel a specific reminder
+     */
+    const cancelReminder = useCallback(async (entityId: number): Promise<void> => {
+        try {
+            console.log('🗑️ NotificationProvider: Canceling reminder', { entityId });
+
+            const notificationId = scheduledRemindersRef.current.get(entityId);
+
+            if (notificationId) {
+                // Cancel with notification service
+                await notificationService.cancelNotification(notificationId);
+
+                // Update internal state
+                setScheduledReminders(prev => {
+                    const newMap = new Map(prev);
+                    newMap.delete(entityId);
+                    return newMap;
+                });
+
+                // Update integration service
+                integrationService.unregisterScheduledReminder(entityId);
+            }
+        } catch (error) {
+            console.error('❌ NotificationProvider: Error canceling reminder:', error);
+            throw error;
+        }
+    }, []);
+
+    /**
+     * Cancel all reminders
+     */
+    const cancelAllReminders = useCallback(async (): Promise<void> => {
+        try {
+            console.log('🗑️ NotificationProvider: Canceling all reminders');
+
+            await integrationService.cancelAllReminders();
+            setScheduledReminders(new Map());
+        } catch (error) {
+            console.error('❌ NotificationProvider: Error canceling all reminders:', error);
+            throw error;
+        }
+    }, []);
+
+    /**
+     * Request notification permissions
+     */
+    const requestPermission = useCallback(async (): Promise<boolean> => {
+        try {
+            console.log('🔐 NotificationProvider: Requesting permissions');
+
+            const granted = await notificationService.requestPermissions();
+            setHasPermission(granted);
+
+            console.log('🔐 NotificationProvider: Permission result:', granted);
+            return granted;
+        } catch (error) {
+            console.error('❌ NotificationProvider: Error requesting permission:', error);
+            return false;
+        }
+    }, []);
+
+    // ===============================
+    // 🔧 HELPER FUNCTIONS
+    // ===============================
+
+    /**
+     * Get main time based on reminder config type
+     */
+    const getMainTimeForConfig = useCallback((config: ReminderConfig): string => {
+        switch (config.type) {
+            case 'task':
+                return config.deadline;
+            case 'event':
+                return config.startTime;
+            case 'habit':
+                return config.dailyTime;
+            default:
+                return '';
+        }
+    }, []);
+
+    // ===============================
+    // 🛠️ UTILITY FUNCTIONS
+    // ===============================
+
+    /**
+     * Get formatted reminder display text
+     */
+    const getReminderDisplay = useCallback((config: ReminderConfig): string => {
+        if (!config.enabled) {
+            return 'Off';
+        }
+
+        const mainTime = getMainTimeForConfig(config);
+        return reminderService.formatReminderDisplay(config.reminderTime, mainTime);
+    }, [getMainTimeForConfig]);
+
+    /**
+     * Get standard reminder options for a type
+     */
+    const getReminderOptions = useCallback((type: ReminderType) => {
+        return reminderService.getStandardReminderOptions(type);
+    }, []);
+
+    /**
+     * Get default reminder options for a type (alias for getReminderOptions)
+     */
+    const getDefaultReminderOptions = useCallback((type: ReminderType) => {
+        return reminderService.getStandardReminderOptions(type);
+    }, []);
+
+    /**
+     * Validate reminder time
+     */
+    const validateReminderTime = useCallback((
+        reminderTime: ReminderTime,
+        mainTime?: string
+    ): boolean => {
+        return reminderService.validateReminderTime(reminderTime, mainTime);
+    }, []);
+
+
+    // ===============================
+    // 🔄 LEGACY BACKWARD COMPATIBILITY
+    // ===============================
+
+    /**
+     * Legacy function for scheduling task notifications
+     * Maps old API to new clean architecture
+     */
     const scheduleTaskNotification = useCallback(async (
         taskId: number,
         title: string,
         description: string,
-        deadline: string,
-        reminderOffset: { hours?: number; minutes?: number } = { hours: 1 }
-    ): Promise<string | null> => {
-        console.log('🧪 Testing task notification scheduling:', { taskId, title, hasPermission });
-
-        if (!hasPermission) {
-            console.log('❌ No permission for task notification');
-            return null;
-        }
-
-        const reminderTime = calculateReminderTime(deadline, reminderOffset);
-        console.log('🕐 Calculated reminder time:', reminderTime);
-
-        if (!isReminderTimeValid(reminderTime)) {
-            console.warn('⚠️ Reminder time is in the past');
-            return null;
-        }
-
-        const isDeadline = reminderOffset.hours === 0 || !reminderOffset;
-        console.log('📋 Scheduling task reminder:', { taskId, title, reminderTime, isDeadline });
+        deadlineISO: string,
+        reminderOffset?: { hours?: number; minutes?: number }
+    ): Promise<ReminderResult> => {
+        console.warn('⚠️ LEGACY API: scheduleTaskNotification is deprecated. Use setupTaskReminder instead.');
 
         try {
-            const notificationId = await scheduleTaskReminder(
+            // Calculate reminder time from deadline and offset
+            const reminderTime: ReminderTime = reminderOffset
+                ? (reminderOffset.minutes as StandardReminderTime) || 5 // Default 5 minutes
+                : 5; // Default 5 minutes
+
+            const config = reminderService.createReminderConfig(
+                'task',
                 taskId,
                 title,
                 description,
-                reminderTime,
-                isDeadline
+                deadlineISO,
+                reminderTime
             );
 
-            if (notificationId) {
-                console.log('✅ Task notification scheduled successfully:', notificationId);
-                setScheduledTaskReminders(prev => new Map(prev.set(taskId, notificationId)));
-            } else {
-                console.log('❌ Failed to get notification ID from service');
-            }
-
-            return notificationId;
+            return await setupReminder(config);
         } catch (error) {
-            console.error('❌ Error in scheduleTaskNotification:', error);
-            return null;
+            console.error('❌ Legacy scheduleTaskNotification error:', error);
+            throw error;
         }
-    }, [hasPermission]);
+    }, [setupReminder]);
 
-    // Schedule event notification
-    const scheduleEventNotification = useCallback(async (
-        eventId: number,
-        title: string,
-        description: string,
-        startTime: string,
-        reminderOffset: { hours?: number; minutes?: number } = { minutes: 30 }
-    ): Promise<string | null> => {
-        console.log('🧪 Testing event notification scheduling:', { eventId, title, hasPermission });
-
-        if (!hasPermission) {
-            console.log('❌ No permission for event notification');
-            return null;
-        }
-
-        const reminderTime = calculateReminderTime(startTime, reminderOffset);
-        console.log('🕐 Calculated reminder time:', reminderTime);
-
-        if (!isReminderTimeValid(reminderTime)) {
-            console.warn('⚠️ Reminder time is in the past');
-            return null;
-        }
-
-        console.log('📅 Scheduling event reminder:', { eventId, title, reminderTime });
+    /**
+     * Legacy function for canceling task notifications
+     */
+    const cancelTaskNotification = useCallback(async (taskId: number): Promise<void> => {
+        console.warn('⚠️ LEGACY API: cancelTaskNotification is deprecated. Use cancelTaskReminder instead.');
 
         try {
-            const notificationId = await scheduleEventReminder(
-                eventId,
-                title,
-                description,
-                reminderTime,
-                true // isStartTime
-            );
-
-            if (notificationId) {
-                console.log('✅ Event notification scheduled successfully:', notificationId);
-                setScheduledEventReminders(prev => new Map(prev.set(eventId, notificationId)));
-            } else {
-                console.log('❌ Failed to get notification ID from service');
-            }
-
-            return notificationId;
+            await cancelReminder(taskId);
         } catch (error) {
-            console.error('❌ Error in scheduleEventNotification:', error);
-            return null;
+            console.error('❌ Legacy cancelTaskNotification error:', error);
+            throw error;
         }
-    }, [hasPermission]);
+    }, [cancelReminder]);
 
-    // Schedule habit notification
+    /**
+     * Legacy function for canceling event notifications
+     */
+    const cancelEventNotification = useCallback(async (eventId: number): Promise<void> => {
+        console.warn('⚠️ LEGACY API: cancelEventNotification is deprecated. Use cancelEventReminder instead.');
+
+        try {
+            await cancelReminder(eventId);
+        } catch (error) {
+            console.error('❌ Legacy cancelEventNotification error:', error);
+            throw error;
+        }
+    }, [cancelReminder]);
+
+    /**
+     * Legacy function for scheduling habit notifications
+     */
     const scheduleHabitNotification = useCallback(async (
         habitId: number,
         title: string,
         description: string,
-        reminderTime: string,
-        frequency: 'daily' | 'weekly' | 'custom' = 'daily'
-    ): Promise<string | null> => {
-        console.log('🧪 Testing habit notification scheduling:', { habitId, title, hasPermission });
-
-        if (!hasPermission) {
-            console.log('❌ No permission for habit notification');
-            return null;
-        }
-
-        console.log('🏃 Scheduling habit reminder:', { habitId, title, reminderTime, frequency });
+        timeISO: string,
+        frequency?: string
+    ): Promise<ReminderResult> => {
+        console.warn('⚠️ LEGACY API: scheduleHabitNotification is deprecated. Use setupHabitReminder instead.');
 
         try {
-            if (!isReminderTimeValid(reminderTime)) {
-                console.warn('⚠️ Reminder time is in the past');
-                return null;
-            }
+            // For habits, timeISO is actually daily time in HH:mm format
+            const dailyTime = timeISO.includes('T')
+                ? new Date(timeISO).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : timeISO;
 
-            const notificationId = await scheduleHabitReminder(
+            const config = reminderService.createReminderConfig(
+                'habit',
                 habitId,
                 title,
                 description,
-                reminderTime,
-                frequency
+                dailyTime,
+                null // No relative offset for habits, they use daily time
             );
 
-            if (notificationId) {
-                console.log('✅ Habit notification scheduled successfully:', notificationId);
-                setScheduledHabitReminders(prev => new Map(prev.set(habitId, notificationId)));
-            } else {
-                console.log('❌ Failed to get notification ID from service');
-            }
-
-            return notificationId;
+            return await setupReminder(config);
         } catch (error) {
-            console.error('❌ Error in scheduleHabitNotification:', error);
-            return null;
+            console.error('❌ Legacy scheduleHabitNotification error:', error);
+            throw error;
         }
-    }, [hasPermission]);
+    }, [setupReminder]);
 
-    // Cancel task notification
-    const cancelTaskNotification = useCallback(async (taskId: number) => {
-        const notificationId = scheduledTaskReminders.get(taskId);
-        if (notificationId) {
-            await cancelNotification(notificationId);
-            setScheduledTaskReminders(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(taskId);
-                return newMap;
-            });
+    /**
+     * Legacy function for canceling habit notifications
+     */
+    const cancelHabitNotification = useCallback(async (habitId: number): Promise<void> => {
+        console.warn('⚠️ LEGACY API: cancelHabitNotification is deprecated. Use cancelHabitReminder instead.');
+
+        try {
+            await cancelReminder(habitId);
+        } catch (error) {
+            console.error('❌ Legacy cancelHabitNotification error:', error);
+            throw error;
         }
-    }, [scheduledTaskReminders]);
+    }, [cancelReminder]);
 
-    // Cancel event notification
-    const cancelEventNotification = useCallback(async (eventId: number) => {
-        const notificationId = scheduledEventReminders.get(eventId);
-        if (notificationId) {
-            await cancelNotification(notificationId);
-            setScheduledEventReminders(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(eventId);
-                return newMap;
-            });
+    /**
+     * Legacy function for canceling all notification schedules
+     */
+    const cancelAllNotificationSchedules = useCallback(async (): Promise<void> => {
+        console.warn('⚠️ LEGACY API: cancelAllNotificationSchedules is deprecated. Use cancelAllReminders instead.');
+
+        try {
+            await cancelAllReminders();
+        } catch (error) {
+            console.error('❌ Legacy cancelAllNotificationSchedules error:', error);
+            throw error;
         }
-    }, [scheduledEventReminders]);
+    }, [cancelAllReminders]);
 
-    // Cancel habit notification
-    const cancelHabitNotification = useCallback(async (habitId: number) => {
-        const notificationId = scheduledHabitReminders.get(habitId);
-        if (notificationId) {
-            await cancelNotification(notificationId);
-            setScheduledHabitReminders(prev => {
-                const newMap = new Map(prev);
-                newMap.delete(habitId);
-                return newMap;
-            });
-        }
-    }, [scheduledHabitReminders]);
+    // ===============================
+    // 📦 CONTEXT VALUE
+    // ===============================
 
-    // Cancel all notifications
-    const cancelAllNotificationSchedules = useCallback(async () => {
-        await cancelAllNotifications();
-        setScheduledTaskReminders(new Map());
-        setScheduledEventReminders(new Map());
-        setScheduledHabitReminders(new Map());
-    }, []);
-
-    // Utility functions
-    const getDefaultReminderOptions = useCallback((type: 'task' | 'event' | 'habit') => {
-        return getDefaultReminderTimes(type);
-    }, []);
-
-    const calculateReminderTimeWrapper = useCallback((
-        mainTime: string,
-        offset: { hours?: number; minutes?: number }
-    ) => {
-        return calculateReminderTime(mainTime, offset);
-    }, []);
-
-    const isValidReminderTimeWrapper = useCallback((reminderTime: string) => {
-        return isReminderTimeValid(reminderTime);
-    }, []);
-
-    const value: NotificationContextType = {
+    const value: NotificationContextType = useMemo(() => ({
+        // State
         hasPermission,
+        scheduledReminders,
+
+        // Actions
+        setupReminder,
+        cancelReminder,
+        cancelAllReminders,
         requestPermission,
-        scheduledTaskReminders,
-        scheduledEventReminders,
-        scheduledHabitReminders,
+
+        // Utility
+        getReminderDisplay,
+        getReminderOptions,
+        getDefaultReminderOptions,
+        validateReminderTime,
+
+        // Notification handling
+        handleNotificationPressed,
+        lastNotification,
+
+        // Legacy backward compatibility
         scheduleTaskNotification,
-        scheduleEventNotification,
-        scheduleHabitNotification,
         cancelTaskNotification,
         cancelEventNotification,
+        scheduleHabitNotification,
         cancelHabitNotification,
         cancelAllNotificationSchedules,
+    }), [
+        hasPermission,
+        scheduledReminders,
+        setupReminder,
+        cancelReminder,
+        cancelAllReminders,
+        requestPermission,
+        getReminderDisplay,
+        getReminderOptions,
         getDefaultReminderOptions,
-        calculateReminderTime: calculateReminderTimeWrapper,
-        isValidReminderTime: isValidReminderTimeWrapper,
-        lastNotification,
+        validateReminderTime,
         handleNotificationPressed,
-    };
+        lastNotification,
+        scheduleTaskNotification,
+        cancelTaskNotification,
+        cancelEventNotification,
+        scheduleHabitNotification,
+        cancelHabitNotification,
+        cancelAllNotificationSchedules,
+    ]);
 
     return (
         <NotificationContext.Provider value={value}>
@@ -396,12 +517,114 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 }
 
 // ===============================
-// 🔹 Hook
+// 🔹 CUSTOM HOOK
 // ===============================
+
 export function useNotifications() {
     const context = useContext(NotificationContext);
     if (context === undefined) {
         throw new Error("useNotifications must be used within a NotificationProvider");
     }
     return context;
+}
+
+// ===============================
+// 🔹 CONVENIENT HOOKS
+// ===============================
+
+/**
+ * Hook for reminder configuration utilities
+ */
+export function useReminderConfig() {
+    const { getReminderDisplay, getReminderOptions, validateReminderTime } = useNotifications();
+
+    return {
+        formatDisplay: getReminderDisplay,
+        getOptions: getReminderOptions,
+        validateTime: validateReminderTime,
+    };
+}
+
+/**
+ * Hook for task reminder specific operations
+ */
+export function useTaskReminders() {
+    const { setupReminder, cancelReminder } = useNotifications();
+
+    return {
+        setupTaskReminder: async (
+            taskId: number,
+            title: string,
+            description: string,
+            deadline: string,
+            reminderTime?: ReminderTime
+        ) => {
+            const config = reminderService.createReminderConfig(
+                'task',
+                taskId,
+                title,
+                description,
+                deadline,
+                reminderTime
+            );
+            return setupReminder(config);
+        },
+        cancelTaskReminder: (taskId: number) => cancelReminder(taskId),
+    };
+}
+
+/**
+ * Hook for event reminder specific operations
+ */
+export function useEventReminders() {
+    const { setupReminder, cancelReminder } = useNotifications();
+
+    return {
+        setupEventReminder: async (
+            eventId: number,
+            title: string,
+            description: string,
+            startTime: string,
+            reminderTime?: ReminderTime
+        ) => {
+            const config = reminderService.createReminderConfig(
+                'event',
+                eventId,
+                title,
+                description,
+                startTime,
+                reminderTime
+            );
+            return setupReminder(config);
+        },
+        cancelEventReminder: (eventId: number) => cancelReminder(eventId),
+    };
+}
+
+/**
+ * Hook for habit reminder specific operations
+ */
+export function useHabitReminders() {
+    const { setupReminder, cancelReminder } = useNotifications();
+
+    return {
+        setupHabitReminder: async (
+            habitId: number,
+            title: string,
+            description: string,
+            dailyTime: string,
+            reminderTime?: ReminderTime
+        ) => {
+            const config = reminderService.createReminderConfig(
+                'habit',
+                habitId,
+                title,
+                description,
+                dailyTime,
+                reminderTime
+            );
+            return setupReminder(config);
+        },
+        cancelHabitReminder: (habitId: number) => cancelReminder(habitId),
+    };
 }

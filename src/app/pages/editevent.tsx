@@ -1,7 +1,7 @@
-import { getEvents, updateEvent } from "@/db/database";
 import AlertModal from "@/components/common/AlertModal";
 import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
-import { useNotifications } from "@/contexts/NotificationContext";
+import { useEventReminders, useNotifications } from "@/contexts/NotificationContext";
+import { getEvents, updateEvent } from "@/db/database";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -28,7 +28,8 @@ export default function EditEventScreen() {
     const [endTime, setEndTime] = useState(new Date());
     const [reminderEnabled, setReminderEnabled] = useState(false);
     const [reminderTime, setReminderTime] = useState<string | null>(null);
-    const { hasPermission, scheduleEventNotification, cancelEventNotification } = useNotifications();
+    const { hasPermission, cancelEventNotification } = useNotifications();
+    const { setupEventReminder } = useEventReminders();
 
     // Diagnostic logging for reminder state
     React.useEffect(() => {
@@ -112,23 +113,23 @@ export default function EditEventScreen() {
                         // Cancel existing notification
                         await cancelEventNotification(parseInt(id as string));
 
-                        // Schedule new notification if reminder is enabled
+                        // Schedule new reminder if enabled
                         if (reminderEnabled && reminderTime) {
-                            // Parse reminder time and calculate offset
-                            let reminderOffset: { hours?: number; minutes?: number } = { minutes: 5 };
+                            // Convert reminder time to new API format (only supports 1, 5, 30 minutes)
+                            let reminderTimeMinutes: 1 | 5 | 30 = 5; // Default
 
-                            if (reminderTime.includes("1 minute")) reminderOffset = { minutes: 1 };
-                            else if (reminderTime.includes("15 minutes")) reminderOffset = { minutes: 15 };
-                            else if (reminderTime.includes("30 minutes")) reminderOffset = { minutes: 30 };
-                            else if (reminderTime.includes("1 hour")) reminderOffset = { hours: 1 };
-                            else if (reminderTime.includes("2 hours")) reminderOffset = { hours: 2 };
+                            if (reminderTime.includes("1 minute")) reminderTimeMinutes = 1;
+                            else if (reminderTime.includes("15 minutes")) reminderTimeMinutes = 5; // Fallback to 5
+                            else if (reminderTime.includes("30 minutes")) reminderTimeMinutes = 30;
+                            else if (reminderTime.includes("1 hour")) reminderTimeMinutes = 30; // Fallback to 30
+                            else if (reminderTime.includes("2 hours")) reminderTimeMinutes = 30; // Fallback to 30
 
-                            await scheduleEventNotification(
+                            await setupEventReminder(
                                 parseInt(id as string),
                                 title,
                                 description,
                                 startTime.toISOString(),
-                                reminderOffset
+                                reminderTimeMinutes
                             );
                         }
                     }

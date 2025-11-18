@@ -1,6 +1,6 @@
 import { formatShortDate } from "@/utils/dateUtils";
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, memo, useCallback, useMemo } from "react";
 import {
     Animated,
     StyleSheet,
@@ -30,6 +30,7 @@ interface HabitCardProps {
     onPress?: () => void;
 }
 
+// Utility functions (not memoized since they're pure functions)
 const parseDate = (dateValue: Date | string | undefined): Date | null => {
     if (!dateValue) return null;
     if (dateValue instanceof Date) return dateValue;
@@ -58,7 +59,7 @@ const SWIPE_OPEN_LEFT = -SWIPE_MAX;
 const SWIPE_OPEN_RIGHT = SWIPE_MAX;
 const SWIPE_THRESHOLD = 70;
 
-export default function HabitCard({
+const HabitCard: React.FC<HabitCardProps> = memo(({
     title,
     color,
     isCheckedIn,
@@ -73,23 +74,28 @@ export default function HabitCard({
     onDelete,
     onCheckIn,
     onPress,
-}: HabitCardProps) {
+}) => {
     const translateX = useRef(new Animated.Value(0)).current;
 
-    const handleGesture = Animated.event(
-        [{ nativeEvent: { translationX: translateX } }],
-        { useNativeDriver: true }
+    // Memoized handlers to prevent re-renders
+    const handleGesture = useCallback(
+        Animated.event(
+            [{ nativeEvent: { translationX: translateX } }],
+            { useNativeDriver: true }
+        ),
+        [translateX]
     );
 
     useEffect(() => {
-        translateX.addListener(({ value }) => {
+        const listenerId = translateX.addListener(({ value }) => {
             if (value > SWIPE_MAX) translateX.setValue(SWIPE_MAX);
             if (value < -SWIPE_MAX) translateX.setValue(-SWIPE_MAX);
         });
-        return () => translateX.removeAllListeners();
+
+        return () => translateX.removeListener(listenerId);
     }, [translateX]);
 
-    const handleRelease = ({ nativeEvent }: any) => {
+    const handleRelease = useCallback(({ nativeEvent }: any) => {
         const { translationX } = nativeEvent;
 
         if (translationX > SWIPE_THRESHOLD) {
@@ -118,19 +124,32 @@ export default function HabitCard({
                 useNativeDriver: true,
             }).start();
         }
-    };
+    }, [onCheckIn, translateX]);
 
-    const getDailyProgressText = () => {
+    const getDailyProgressText = useCallback(() => {
         const total = totalDaysInPeriod || 1;
         const done = completedCount;
         return `${done}/${total} day${total !== 1 ? "s" : ""}`;
-    };
+    }, [totalDaysInPeriod, completedCount]);
 
-    const getDailyProgressPercentage = () => {
+    const getDailyProgressPercentage = useCallback(() => {
         const total = totalDaysInPeriod || 1;
         const done = completedCount;
         return Math.min((done / total) * 100, 100);
-    };
+    }, [totalDaysInPeriod, completedCount]);
+
+    // Memoized button handlers
+    const handleEdit = useCallback(() => onEdit(), [onEdit]);
+    const handleDelete = useCallback(() => onDelete(), [onDelete]);
+    const handleCheckIn = useCallback(() => {
+        if (canCheckIn) onCheckIn();
+    }, [canCheckIn, onCheckIn]);
+    const handlePress = useCallback(() => onPress?.(), [onPress]);
+
+    // Memoized date formatting
+    const formattedStartDate = useMemo(() => formatHabitDate(startDate), [startDate]);
+    const formattedEndDate = useMemo(() => endDate ? formatHabitDate(endDate) : null, [endDate]);
+    const dateRange = formattedEndDate ? `${formattedStartDate} - ${formattedEndDate}` : formattedStartDate;
 
     return (
         <GestureHandlerRootView>
@@ -143,12 +162,12 @@ export default function HabitCard({
                     </View>
 
                     <View style={styles.rightActions}>
-                        <TouchableOpacity style={styles.actionBtn} onPress={onEdit}>
+                        <TouchableOpacity style={styles.actionBtn} onPress={handleEdit}>
                             <Feather name="edit-2" size={24} color="#2563eb" />
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.actionBtn, { backgroundColor: "#fee2e2" }]}
-                            onPress={onDelete}
+                            onPress={handleDelete}
                         >
                             <Feather name="trash-2" size={24} color="#dc2626" />
                         </TouchableOpacity>
@@ -167,10 +186,10 @@ export default function HabitCard({
                             },
                         ]}
                     >
-                        <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
+                        <TouchableOpacity activeOpacity={0.85} onPress={handlePress}>
                             <View style={styles.contentRow}>
                                 <TouchableOpacity
-                                    onPress={canCheckIn ? onCheckIn : undefined}
+                                    onPress={handleCheckIn}
                                     style={[styles.iconButton, !canCheckIn && styles.disabledButton]}
                                     disabled={!canCheckIn}
                                 >
@@ -204,8 +223,7 @@ export default function HabitCard({
                                                     isCheckedIn && styles.textCompletedLight,
                                                 ]}
                                             >
-                                                {formatHabitDate(startDate)}
-                                                {endDate && ` - ${formatHabitDate(endDate)}`}
+                                                {dateRange}
                                             </Text>
                                         </View>
 
@@ -244,7 +262,11 @@ export default function HabitCard({
             </View>
         </GestureHandlerRootView>
     );
-}
+});
+
+HabitCard.displayName = 'HabitCard';
+
+export default HabitCard;
 
 const styles = StyleSheet.create({
     wrapper: { marginBottom: 16, position: "relative" },

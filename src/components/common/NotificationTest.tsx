@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
-import { useNotifications } from '@/contexts/NotificationContext';
+import { useNotifications, useEventReminders } from '@/contexts/NotificationContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export function NotificationTest() {
@@ -11,10 +11,10 @@ export function NotificationTest() {
         hasPermission,
         requestPermission,
         scheduleTaskNotification,
-        scheduleEventNotification,
         scheduleHabitNotification,
         cancelAllNotificationSchedules
     } = useNotifications();
+    const { setupEventReminder } = useEventReminders();
 
     const [testResults, setTestResults] = useState<string[]>([]);
 
@@ -56,18 +56,18 @@ export function NotificationTest() {
 
         try {
             const testStartTime = new Date(Date.now() + 180000); // 3 minutes from now
-            const result = await scheduleEventNotification(
+            const result = await setupEventReminder(
                 999, // Test event ID
                 '🧪 Test Event',
                 'This is a test event notification',
                 testStartTime.toISOString(),
-                { minutes: 2 } // 2 minutes before start time
+                1 // 1 minute before start time (new API uses only 1, 5, 30)
             );
 
             if (result) {
-                addTestResult('✅ Event notification scheduled - will trigger in 2 minutes');
+                addTestResult('✅ Event reminder scheduled - will trigger in 1 minute');
             } else {
-                addTestResult('❌ Failed to schedule event notification');
+                addTestResult('❌ Failed to schedule event reminder');
             }
         } catch (error) {
             addTestResult(`❌ Event test error: ${error}`);

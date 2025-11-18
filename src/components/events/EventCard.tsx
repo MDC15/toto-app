@@ -1,5 +1,5 @@
 import { AntDesign, Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { memo, useCallback } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface EventCardProps {
@@ -15,7 +15,7 @@ interface EventCardProps {
     onDelete?: () => void;
 }
 
-export default function EventCard({
+const EventCard = memo(({
     title,
     timeRange,
     date,
@@ -26,9 +26,22 @@ export default function EventCard({
     onToggleComplete,
     onEdit,
     onDelete,
-}: EventCardProps) {
+}: EventCardProps) => {
+    // Memoize callback functions to prevent re-renders
+    const handleToggleComplete = useCallback(() => {
+        onToggleComplete?.();
+    }, [onToggleComplete]);
+
+    const handleEdit = useCallback(() => {
+        onEdit?.();
+    }, [onEdit]);
+
+    const handleDelete = useCallback(() => {
+        onDelete?.();
+    }, [onDelete]);
+
     return (
-        <View style={[styles.card, { backgroundColor: color }]}>
+        <View style={[styles.card, { backgroundColor: '#fff' }]}>
             {/* Thanh màu thể hiện trạng thái */}
             <View
                 style={[styles.statusIndicator, { backgroundColor: color }]}
@@ -36,7 +49,7 @@ export default function EventCard({
 
             <View style={styles.content}>
                 {/* Checkbox hoàn thành */}
-                <TouchableOpacity onPress={onToggleComplete} style={styles.iconButton}>
+                <TouchableOpacity onPress={handleToggleComplete} style={styles.iconButton}>
                     <Feather
                         name={completed ? "check-circle" : "circle"}
                         size={24}
@@ -80,17 +93,21 @@ export default function EventCard({
 
                 {/* Nút edit / delete */}
                 <View style={styles.actions}>
-                    <TouchableOpacity onPress={onEdit}>
+                    <TouchableOpacity onPress={handleEdit}>
                         <Feather name="edit-2" size={20} color="#6b7280" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={onDelete} style={{ marginLeft: 12 }}>
+                    <TouchableOpacity onPress={handleDelete} style={{ marginLeft: 12 }}>
                         <Feather name="trash" size={20} color="#ef4444" />
                     </TouchableOpacity>
                 </View>
             </View>
         </View>
     );
-}
+});
+
+EventCard.displayName = 'EventCard';
+
+export default EventCard;
 
 const styles = StyleSheet.create({
     card: {

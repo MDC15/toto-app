@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { memo, useCallback } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { responsive } from '@/constants/theme';
 
@@ -20,7 +20,7 @@ const priorityColors = {
     Low: "#3b82f6",
 };
 
-export default function TaskCard({
+const TaskCard = memo(({
     title,
     description,
     due,
@@ -29,7 +29,20 @@ export default function TaskCard({
     onEdit,
     onDelete,
     onToggleComplete,
-}: TaskCardProps) {
+}: TaskCardProps) => {
+    // Memoize callback functions to prevent re-renders
+    const handleToggleComplete = useCallback(() => {
+        onToggleComplete();
+    }, [onToggleComplete]);
+
+    const handleEdit = useCallback(() => {
+        onEdit();
+    }, [onEdit]);
+
+    const handleDelete = useCallback(() => {
+        onDelete();
+    }, [onDelete]);
+
     return (
         <View style={styles.card}>
             {/* Thanh màu thể hiện độ ưu tiên */}
@@ -39,7 +52,7 @@ export default function TaskCard({
 
             <View style={styles.content}>
                 {/* Checkbox hoàn thành */}
-                <TouchableOpacity onPress={onToggleComplete} style={styles.iconButton}>
+                <TouchableOpacity onPress={handleToggleComplete} style={styles.iconButton}>
                     <Feather
                         name={completed ? "check-circle" : "circle"}
                         size={24}
@@ -81,17 +94,21 @@ export default function TaskCard({
 
                 {/* Nút edit / delete */}
                 <View style={styles.actions}>
-                    <TouchableOpacity onPress={onEdit}>
+                    <TouchableOpacity onPress={handleEdit}>
                         <Feather name="edit-2" size={20} color="#6b7280" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={onDelete} style={{ marginLeft: 12 }}>
+                    <TouchableOpacity onPress={handleDelete} style={{ marginLeft: 12 }}>
                         <Feather name="trash" size={20} color="#ef4444" />
                     </TouchableOpacity>
                 </View>
             </View>
         </View>
     );
-}
+});
+
+TaskCard.displayName = 'TaskCard';
+
+export default TaskCard;
 
 const styles = StyleSheet.create({
     card: {

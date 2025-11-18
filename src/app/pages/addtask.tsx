@@ -1,9 +1,10 @@
 import AlertModal from "@/components/common/AlertModal";
-import PrioritySelector from "@/components/tasks/PrioritySelector";
-import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
 import { NotificationPermission } from "@/components/common/NotificationPermission";
-import { useTasks } from "@/contexts/TasksContext";
+import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
+import PrioritySelector from "@/components/tasks/PrioritySelector";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { useTasks } from "@/contexts/TasksContext";
+import { ReminderTime } from "@/types/reminder.types";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useNavigation } from "expo-router";
@@ -31,13 +32,13 @@ export default function AddTaskScreen() {
     const [deadline, setDeadline] = useState(new Date());
     const [priority, setPriority] = useState<"High" | "Medium" | "Low" | undefined>();
     const [reminderEnabled, setReminderEnabled] = useState(false);
-    const [reminderTime, setReminderTime] = useState<string | null>(null);
+    const [reminderTime, setReminderTime] = useState<ReminderTime>(null);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const { hasPermission, scheduleTaskNotification } = useNotifications();
 
     // Track initial state for change detection
     const initialDeadline = useRef(new Date());
-    const initialReminderTime = useRef<string | null>(null);
+    const initialReminderTime = useRef<ReminderTime>(null);
     const initialReminderEnabled = useRef(false);
     const initialTitle = useRef(params.title as string || "");
     const initialDescription = useRef(params.description as string || "");
@@ -156,9 +157,24 @@ export default function AddTaskScreen() {
             showAlert('warning', 'Select Priority', 'Please choose a priority for your task.');
             return;
         }
+        if (isNaN(deadline.getTime())) {
+            setIsCreatingTask(false);
+            showAlert('error', 'Invalid Date', 'The selected date is invalid. Please select a valid date.');
+            return;
+        }
 
         // Add task with reminder only if enabled and has time
         const reminder = reminderEnabled && reminderTime ? reminderTime : null;
+
+        // Convert reminder time to ISO string for database compatibility
+        let reminderISO = undefined;
+        if (reminder) {
+            const reminderDate = new Date(deadline);
+            reminderDate.setMinutes(reminderDate.getMinutes() - (reminder as number));
+            if (!isNaN(reminderDate.getTime())) {
+                reminderISO = reminderDate.toISOString();
+            }
+        }
 
         addTask({
             title,
@@ -167,7 +183,7 @@ export default function AddTaskScreen() {
             priority,
             date: undefined,
             due: undefined,
-            reminder: reminder || undefined
+            reminder: reminderISO
         });
 
         // Schedule notification if reminder is set and user has permission
@@ -313,9 +329,9 @@ export default function AddTaskScreen() {
                     type="task"
                     enabled={reminderEnabled}
                     onToggle={setReminderEnabled}
-                    value={reminderTime}
-                    onChange={setReminderTime}
-                    mainTime={deadline.toISOString()}
+                    value={reminderTime as any} // Cast to string | null
+                    onChange={(value: string | null) => setReminderTime(value as any)} // Handle string | null
+                    mainTime={isNaN(deadline.getTime()) ? new Date().toISOString() : deadline.toISOString()}
                     disabled={!hasPermission || isCreatingTask}
                 />
 
