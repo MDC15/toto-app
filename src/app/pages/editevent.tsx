@@ -28,8 +28,8 @@ export default function EditEventScreen() {
     const [endTime, setEndTime] = useState(new Date());
     const [reminderEnabled, setReminderEnabled] = useState(false);
     const [reminderTime, setReminderTime] = useState<string | null>(null);
-    const { hasPermission, cancelEventNotification } = useNotifications();
-    const { setupEventReminder } = useEventReminders();
+    const { hasPermission } = useNotifications();
+    const { setupEventReminder, cancelEventReminder } = useEventReminders();
 
     // Diagnostic logging for reminder state
     React.useEffect(() => {
@@ -111,7 +111,7 @@ export default function EditEventScreen() {
                 try {
                     if (hasPermission) {
                         // Cancel existing notification
-                        await cancelEventNotification(parseInt(id as string));
+                        await cancelEventReminder(parseInt(id as string));
 
                         // Schedule new reminder if enabled
                         if (reminderEnabled && reminderTime) {

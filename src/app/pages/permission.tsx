@@ -19,7 +19,7 @@ interface PermissionState {
 
 export default function NotificationPermissionScreen() {
     const router = useRouter();
-    const { hasPermission } = useNotifications();
+    const { hasPermission, requestPermission: requestContextPermission, checkPermission: checkContextPermission } = useNotifications();
     const [state, setState] = useState<PermissionState>({
         checking: false,
         requesting: false,
@@ -44,6 +44,11 @@ export default function NotificationPermissionScreen() {
 
             const { status: existingStatus } = await Notifications.getPermissionsAsync();
             console.log("Notification permission:", existingStatus);
+
+            // Sync with context if permission is granted
+            if (existingStatus === 'granted' && !hasPermission) {
+                await checkContextPermission();
+            }
         } catch (error) {
             console.error("Error checking notification permission:", error);
         } finally {
@@ -56,17 +61,13 @@ export default function NotificationPermissionScreen() {
         try {
             setState((prev) => ({ ...prev, requesting: true }));
 
-            const { status } = await Notifications.requestPermissionsAsync({
-                ios: {
-                    allowAlert: true,
-                    allowBadge: true,
-                    allowSound: true,
-                },
-            });
+            // Use context method to ensure state is updated globally
+            const granted = await requestContextPermission();
 
-            if (status === 'granted') {
+            if (granted) {
                 console.log('✅ Permission granted! Notifications are now active');
-                // Navigation will happen automatically via useEffect when hasPermission becomes true
+                // Force a check to ensure context is updated
+                await checkContextPermission();
                 router.push("/(tabs)");
             } else {
                 console.log('❌ Permission denied, still navigating to main app');

@@ -266,6 +266,20 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         }
     }, []);
 
+    /**
+     * Check notification permissions
+     */
+    const checkPermission = useCallback(async (): Promise<boolean> => {
+        try {
+            const granted = await notificationService.getNotificationStatus();
+            setHasPermission(granted);
+            return granted;
+        } catch (error) {
+            console.error('❌ NotificationProvider: Error checking permission:', error);
+            return false;
+        }
+    }, []);
+
     // ===============================
     // 🔧 HELPER FUNCTIONS
     // ===============================
@@ -470,6 +484,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         cancelReminder,
         cancelAllReminders,
         requestPermission,
+        checkPermission,
 
         // Utility
         getReminderDisplay,
@@ -495,6 +510,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         cancelReminder,
         cancelAllReminders,
         requestPermission,
+        checkPermission,
         getReminderDisplay,
         getReminderOptions,
         getDefaultReminderOptions,

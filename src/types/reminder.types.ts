@@ -136,6 +136,7 @@ export interface NotificationContextType {
     cancelReminder: (entityId: number) => Promise<void>;
     cancelAllReminders: () => Promise<void>;
     requestPermission: () => Promise<boolean>;
+    checkPermission: () => Promise<boolean>;
 
     // Utility
     getReminderDisplay: (config: ReminderConfig) => string;

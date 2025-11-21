@@ -13,7 +13,7 @@ import { AppState, AppStateStatus, Linking, ScrollView, StyleSheet } from "react
 import * as WebBrowser from 'expo-web-browser';
 
 export default function Settings() {
-    const { hasPermission, requestPermission } = useNotifications();
+    const { hasPermission, requestPermission, checkPermission } = useNotifications();
     const [isToggling, setIsToggling] = useState(false);
     const [appState, setAppState] = useState(AppState.currentState);
     const [currentView, setCurrentView] = useState<'main' | 'about'>('main');
@@ -61,6 +61,7 @@ export default function Settings() {
             if (appState.match(/inactive|background/) && nextAppState === "active") {
                 // App came to foreground, check if permission status changed
                 console.log("🔄 App came to foreground, checking notification permissions...");
+                checkPermission();
             }
             setAppState(nextAppState);
         });
@@ -68,7 +69,7 @@ export default function Settings() {
         return () => {
             subscription.remove();
         };
-    }, [appState]);
+    }, [appState, checkPermission]);
 
     const toggleNotifications = useCallback(async () => {
         if (isToggling) return;

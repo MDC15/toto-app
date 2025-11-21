@@ -1,8 +1,7 @@
 import AlertModal from "@/components/common/AlertModal";
 import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
-import { useNotifications, useEventReminders } from "@/contexts/NotificationContext";
+import { useEventReminders, useNotifications } from "@/contexts/NotificationContext";
 import { addEvent } from "@/db/database";
-import { ReminderTime } from "@/types/reminder.types";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -28,7 +27,7 @@ export default function CreateEventScreen() {
     const [startTime, setStartTime] = useState(new Date());
     const [endTime, setEndTime] = useState(new Date());
     const [reminderEnabled, setReminderEnabled] = useState(false);
-    const [reminderTime, setReminderTime] = useState<ReminderTime>(5);
+    const [reminderTime, setReminderTime] = useState<string | null>(null);
     const [eventColor, setEventColor] = useState("#fed7aa");
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
     const { hasPermission } = useNotifications();
@@ -40,7 +39,7 @@ export default function CreateEventScreen() {
     const initialStartTime = useRef(new Date());
     const initialEndTime = useRef(new Date());
     const initialReminderEnabled = useRef(false);
-    const initialReminderTime = useRef<ReminderTime>(5);
+    const initialReminderTime = useRef<string | null>(null);
     const initialEventColor = useRef("#fed7aa");
 
     // Diagnostic logging for reminder state
@@ -71,7 +70,7 @@ export default function CreateEventScreen() {
             setStartTime(new Date());
             setEndTime(new Date());
             setReminderEnabled(false);
-            setReminderTime(5);
+            setReminderTime(null);
             setEventColor("#fed7aa");
             setIsCreatingEvent(false);
 
@@ -81,7 +80,7 @@ export default function CreateEventScreen() {
             initialStartTime.current = new Date();
             initialEndTime.current = new Date();
             initialReminderEnabled.current = false;
-            initialReminderTime.current = 5;
+            initialReminderTime.current = null;
             initialEventColor.current = "#fed7aa";
         }, [])
     );
@@ -156,9 +155,18 @@ export default function CreateEventScreen() {
         try {
             // Convert reminder time to ISO string for database compatibility
             let reminderISO = undefined;
+            let reminderMinutes: 1 | 5 | 30 = 5;
             if (reminderEnabled && reminderTime) {
+                // Parse the string to get minutes
+                const match = reminderTime.match(/(\d+)/);
+                if (match) {
+                    const minutes = parseInt(match[1]);
+                    if (minutes === 1 || minutes === 5 || minutes === 30) {
+                        reminderMinutes = minutes as 1 | 5 | 30;
+                    }
+                }
                 const reminderDate = new Date(startTime);
-                reminderDate.setMinutes(reminderDate.getMinutes() - (reminderTime as number));
+                reminderDate.setMinutes(reminderDate.getMinutes() - reminderMinutes);
                 reminderISO = reminderDate.toISOString();
             }
 
@@ -166,13 +174,12 @@ export default function CreateEventScreen() {
 
             // Schedule reminder if enabled
             if (reminderEnabled && reminderTime && hasPermission) {
-                // reminderTime is already in correct format (1, 5, or 30 minutes)
                 await setupEventReminder(
                     newEventId,
                     title,
                     description,
                     startTime.toISOString(),
-                    reminderTime
+                    reminderMinutes
                 );
             }
 
@@ -193,7 +200,7 @@ export default function CreateEventScreen() {
                 setStartTime(new Date());
                 setEndTime(new Date());
                 setReminderEnabled(false);
-                setReminderTime(5);
+                setReminderTime(null);
                 setEventColor("#fed7aa");
                 setIsCreatingEvent(false);
                 setAlertVisible(false);

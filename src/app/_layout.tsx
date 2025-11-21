@@ -1,8 +1,8 @@
 import { responsive } from '@/constants/theme';
+import { CakeProvider } from '@/contexts/CakeContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { UserProvider } from '@/contexts/UserContext';
-import { NotificationProvider } from '@/contexts/NotificationContext';
-import { CakeProvider } from '@/contexts/CakeContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   DarkTheme,
@@ -56,6 +56,7 @@ export default function RootLayout() {
                   <Stack.Screen name="pages/templates" options={{ headerShown: true, title: 'Templates', headerLeft: () => null }} />
                   <Stack.Screen name="pages/createevent" options={{ headerShown: true, title: 'Create Event', headerLeft: () => null }} />
                   <Stack.Screen name="pages/editevent" options={{ headerShown: true, title: 'Edit Event', headerLeft: () => null }} />
+                  <Stack.Screen name="pages/eventlist" options={{ headerShown: true, title: 'Event Details', headerLeft: () => null }} />
                   <Stack.Screen name="pages/createhabit" options={{ headerShown: true, title: 'Create Habits', headerLeft: () => null }} />
                   <Stack.Screen name="pages/viewhabit" options={{ headerShown: true, title: 'Habit Details', headerLeft: () => null }} />
                   <Stack.Screen name="pages/edithabit" options={{ headerShown: true, title: 'Edit Habit', headerLeft: () => null }} />
