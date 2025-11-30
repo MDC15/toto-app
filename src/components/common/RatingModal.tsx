@@ -37,7 +37,7 @@ export default function RatingModal({ visible, onClose, onSubmit }: RatingModalP
                 <Ionicons
                     name={star <= selectedRating ? "star" : "star-outline"}
                     size={32}
-                    color={star <= selectedRating ? "#FFD700" : "#DDD"}
+                    color={star <= selectedRating ? "#fca131" : "#DDD"}
                 />
             </TouchableOpacity>
         ));
@@ -53,7 +53,7 @@ export default function RatingModal({ visible, onClose, onSubmit }: RatingModalP
             <Pressable style={styles.overlay} onPress={handleClose}>
                 <View style={styles.card} onTouchStart={(e) => e.stopPropagation()}>
                     <View style={styles.iconCircle}>
-                        <Ionicons name="star" size={24} color="#FFD700" />
+                        <Ionicons name="star" size={24} color="#fca131" />
                     </View>
 
                     <Text style={styles.title}>Rate Our App</Text>
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: '#FFF8DC',
+        backgroundColor: '#FFF9F0',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 10,
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     submitButton: {
-        backgroundColor: '#2563EB',
+        backgroundColor: '#fca131',
         paddingVertical: 10,
         paddingHorizontal: 24,
         borderRadius: 12,

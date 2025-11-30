@@ -18,14 +18,14 @@ export default function AboutView({ onBack }: AboutViewProps) {
             <ThemedView style={styles.content}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#007AFF" />
+                        <Ionicons name="chevron-back" size={24} color="#fca131" />
                     </TouchableOpacity>
                     <ThemedText style={styles.title}>About TodoList</ThemedText>
                 </View>
 
                 <View style={styles.appIconContainer}>
                     <View style={styles.appIcon}>
-                        <MaterialIcons name="check-circle" size={48} color="#f97316" />
+                        <MaterialIcons name="check-circle" size={48} color="#fca131" />
                     </View>
                     <ThemedText style={styles.appName}>TodoList Pro</ThemedText>
                     <ThemedText style={styles.appVersion}>Version 1.0.0</ThemedText>
@@ -41,19 +41,19 @@ export default function AboutView({ onBack }: AboutViewProps) {
                 <View style={styles.section}>
                     <ThemedText style={styles.sectionTitle}>Key Features</ThemedText>
                     <View style={styles.featureItem}>
-                        <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                        <Ionicons name="checkmark-circle" size={20} color="#fca131" />
                         <ThemedText style={styles.featureText}>Advanced task management with priorities</ThemedText>
                     </View>
                     <View style={styles.featureItem}>
-                        <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                        <Ionicons name="checkmark-circle" size={20} color="#fca131" />
                         <ThemedText style={styles.featureText}>Habit tracking with detailed analytics</ThemedText>
                     </View>
                     <View style={styles.featureItem}>
-                        <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                        <Ionicons name="checkmark-circle" size={20} color="#fca131" />
                         <ThemedText style={styles.featureText}>Smart event scheduling and reminders</ThemedText>
                     </View>
                     <View style={styles.featureItem}>
-                        <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                        <Ionicons name="checkmark-circle" size={20} color="#fca131" />
                         <ThemedText style={styles.featureText}>Premium features for power users</ThemedText>
                     </View>
                 </View>
@@ -70,21 +70,21 @@ export default function AboutView({ onBack }: AboutViewProps) {
                         style={styles.linkItem}
                         onPress={() => handleLinkPress('mailto:support@todolistpro.com')}
                     >
-                        <Ionicons name="mail" size={20} color="#007AFF" />
+                        <Ionicons name="mail" size={20} color="#fca131" />
                         <ThemedText style={styles.linkText}>support@todolistpro.com</ThemedText>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.linkItem}
                         onPress={() => handleLinkPress('https://todolistpro.com/privacy')}
                     >
-                        <Ionicons name="shield-checkmark" size={20} color="#007AFF" />
+                        <Ionicons name="shield-checkmark" size={20} color="#fca131" />
                         <ThemedText style={styles.linkText}>Privacy Policy</ThemedText>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.linkItem}
                         onPress={() => handleLinkPress('https://todolistpro.com/terms')}
                     >
-                        <Ionicons name="document-text" size={20} color="#007AFF" />
+                        <Ionicons name="document-text" size={20} color="#fca131" />
                         <ThemedText style={styles.linkText}>Terms of Service</ThemedText>
                     </TouchableOpacity>
                 </View>
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     appName: {
         fontSize: 28,
         fontWeight: "700",
-        color: "#333",
+        color: "#fca131",
         marginBottom: 4,
     },
     appVersion: {
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     },
     linkText: {
         fontSize: 16,
-        color: "#007AFF",
+        color: "#fca131",
         marginLeft: 12,
         textDecorationLine: "underline",
     },

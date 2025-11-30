@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 
 // Components
@@ -21,9 +21,24 @@ const getIconForTitle = (title: string): string => {
 };
 
 export default function EventsScreen() {
+    const { selectedDate: dateParam } = useLocalSearchParams();
     const { cancelEventReminder } = useEventReminders();
     const [selectedDate, setSelectedDate] = React.useState(getNow());
     const [events, setEvents] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (dateParam) {
+            const p = dateParam as string;
+            // If the param is YYYY-MM-DD (no time) construct a local date to avoid TZ shifts
+            const ymdMatch = /^\d{4}-\d{2}-\d{2}$/.test(p);
+            if (ymdMatch) {
+                const [y, m, d] = p.split('-').map(Number);
+                setSelectedDate(new Date(y, m - 1, d));
+            } else {
+                setSelectedDate(new Date(p));
+            }
+        }
+    }, [dateParam]);
 
     const fetchEvents = async () => {
         const dbEvents = await getEvents();

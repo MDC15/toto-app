@@ -1,19 +1,20 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
+import NameInputModal from '@/components/common/NameInputModal';
 import CalendarCard from '@/components/home/CalendarCard';
 import GreetingCard from '@/components/home/GreetingCard';
 import TaskSection from '@/components/home/TaskSection';
 import { TaskItem, TaskTypes } from '@/components/home/types';
+import { responsive } from '@/constants/theme';
 import { useTasks } from '@/contexts/TasksContext';
 import { useUser } from '@/contexts/UserContext';
-import NameInputModal from '@/components/common/NameInputModal';
 import { getEvents } from '@/db/database';
+import { getDateString } from '@/utils/dateUtils';
 import { useFocusEffect } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { router } from 'expo-router';
-import { responsive } from '@/constants/theme';
 
 const getIconForTitle = (title: string): React.ComponentProps<typeof MaterialCommunityIcons>['name'] => {
     if (title.toLowerCase().includes('read')) return 'book-open-page-variant';
@@ -109,10 +110,10 @@ export default function HomeScreen() {
             <CalendarCard
                 onDateSelect={(date) => {
                     setSelectedDate(date);
-                    // Navigate to events tab with selected date
+                    // Navigate to events tab with selected date as YYYY-MM-DD (avoid TZ offsets)
                     router.push({
                         pathname: '/(tabs)/events',
-                        params: { selectedDate: date.toISOString() }
+                        params: { selectedDate: getDateString(date) }
                     });
                 }}
                 markedData={eventDates}

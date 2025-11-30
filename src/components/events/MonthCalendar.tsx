@@ -1,6 +1,7 @@
 import { Colors, responsive } from '@/constants/theme';
 import { isSameDay } from '@/utils/dateUtils';
 import { Feather } from '@expo/vector-icons';
+// replaced DateTimePicker with custom inline month picker
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, FlatList, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -32,6 +33,8 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
     onViewEvents
 }) => {
     const scrollViewRef = useRef<ScrollView>(null);
+    const monthPickerScrollRef = useRef<FlatList<any> | null>(null);
+    const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [months, setMonths] = useState(() => {
         const base = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
         return [
@@ -45,20 +48,17 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
     const currentMonth = months[2];
 
     useEffect(() => {
-        const base = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-        setMonths([
-            new Date(base.getFullYear(), base.getMonth() - 2, 1),
-            new Date(base.getFullYear(), base.getMonth() - 1, 1),
-            base,
-            new Date(base.getFullYear(), base.getMonth() + 1, 1),
-            new Date(base.getFullYear(), base.getMonth() + 2, 1),
-        ]);
+        // center calendar around selectedDate
+        centerCalendar(selectedDate);
     }, [selectedDate]);
 
+    // Keep the initial selected date in a ref so the mount effect doesn't need selectedDate in its deps
+    const initialSelectedDateRef = React.useRef<Date>(selectedDate);
+
     useEffect(() => {
-        // Scroll to the center month on mount
+        // Ensure calendar is centered on mount (uses ref to avoid eslint missing-deps)
         setTimeout(() => {
-            scrollViewRef.current?.scrollTo({ x: screenWidth * 2, animated: false });
+            centerCalendar(initialSelectedDateRef.current);
         }, 100);
     }, []);
 
@@ -91,25 +91,39 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
         return events.filter(event => isSameDay(event.startTime, date));
     }, [events]);
 
-    // Navigate months
-    const navigateMonth = (direction: 'prev' | 'next') => {
-        if (direction === 'prev') {
-            setMonths(prev => [
-                new Date(prev[0].getFullYear(), prev[0].getMonth() - 1, 1),
-                ...prev.slice(0, 4)
-            ]);
-        } else {
-            setMonths(prev => [
-                ...prev.slice(1),
-                new Date(prev[4].getFullYear(), prev[4].getMonth() + 1, 1)
-            ]);
-        }
-        scrollViewRef.current?.scrollTo({ x: screenWidth * 2, animated: true });
-    };
-
     const goToToday = () => {
         const today = new Date();
-        const base = new Date(today.getFullYear(), today.getMonth(), 1);
+        onSelectDate(today);
+        centerCalendar(today);
+    };
+
+
+    const monthNamesShort = React.useMemo(() => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], []);
+
+    const generateYears = (centerYear: number, range = 2) => {
+        const years = [] as number[];
+        for (let y = centerYear - range; y <= centerYear + range; y++) years.push(y);
+        return years;
+    };
+
+    const PICKER_ITEM_WIDTH = Math.max(64, responsive.width(12));
+    const PICKER_HEIGHT = Math.max(56, responsive.spacing(44));
+
+    const buildPickerItems = React.useCallback((centerYear: number, range = 2) => {
+        const years = generateYears(centerYear, range);
+        const items: any[] = [];
+        years.forEach((year) => {
+            items.push({ type: 'year', year });
+            monthNamesShort.forEach((m, idx) => items.push({ type: 'month', year, idx, label: m }));
+        });
+        return items;
+    }, [monthNamesShort]);
+
+    const pickerItems = React.useMemo(() => buildPickerItems(currentMonth.getFullYear(), 2), [buildPickerItems, currentMonth]);
+
+    // Center the calendar pages around a given date so that the requested month is in the center page
+    const centerCalendar = (date: Date) => {
+        const base = new Date(date.getFullYear(), date.getMonth(), 1);
         setMonths([
             new Date(base.getFullYear(), base.getMonth() - 2, 1),
             new Date(base.getFullYear(), base.getMonth() - 1, 1),
@@ -117,9 +131,13 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
             new Date(base.getFullYear(), base.getMonth() + 1, 1),
             new Date(base.getFullYear(), base.getMonth() + 2, 1),
         ]);
-        onSelectDate(today);
-        scrollViewRef.current?.scrollTo({ x: screenWidth * 2, animated: true });
+        // scroll to center after short delay to give layout time to update
+        setTimeout(() => {
+            scrollViewRef.current?.scrollTo({ x: screenWidth * 2, animated: true });
+        }, 60);
     };
+
+    // (removed legacy individual picker handlers — inline selection is used)
 
     const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const { contentOffset, layoutMeasurement } = event.nativeEvent;
@@ -155,32 +173,101 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
     };
 
     const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const cellSize = (screenWidth - 40) / 7; // 7 days, 24 padding on sides
-    const cellHeight = cellSize * 1.6; // Make cells taller for events
+    const paddingHorizontal = responsive.spacing(16);
+    const cellSize = (screenWidth - paddingHorizontal * 2) / 7;
+    // Fixed cell height: consistent calendar size regardless of picker state (like Google Calendar)
+    const cellHeight = cellSize * 1.5;
+    // Fixed calendar container height: always stable layout, no flex resizing
+    const FIXED_CALENDAR_HEIGHT = cellSize * 1.5 * 6; // 6 rows of calendar days
 
     return (
         <View style={styles.container}>
-            {/* Header with month and navigation */}
+            {/* Header with month and month picker */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
-                    <Feather name="chevron-left" size={24} color="#f97316" />
-                </TouchableOpacity>
-
                 <TouchableOpacity onPress={goToToday} style={styles.monthSelector}>
                     <Text style={styles.monthText}>
                         {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
-                    <Feather name="chevron-right" size={24} color="#f97316" />
+                <TouchableOpacity onPress={() => {
+                    const willOpen = !showMonthPicker;
+                    setShowMonthPicker(willOpen);
+                    if (willOpen) {
+                        // scroll picker to show current month near center for faster UX
+                        const years = generateYears(currentMonth.getFullYear(), 2);
+                        const yearIdx = years.indexOf(selectedDate.getFullYear());
+                        const monthIdx = selectedDate.getMonth();
+                        const itemsPerYear = 13; // 1 label + 12 months
+                        const itemIndex = Math.max(0, yearIdx * itemsPerYear + 1 + monthIdx);
+                        // wait for layout then scroll the FlatList to center the current month
+                        setTimeout(() => {
+                            monthPickerScrollRef.current?.scrollToIndex({ index: itemIndex, viewPosition: 0.5 });
+                        }, 50);
+                    }
+                }} style={styles.monthPickerButton}>
+                    <Feather name="calendar" size={20} color={Colors.light.text} />
                 </TouchableOpacity>
             </View>
+
+            {showMonthPicker && (
+                // Inline picker: rendered in-flow so it pushes the calendar down
+                <View style={[styles.pickerInlineContainer, { height: PICKER_HEIGHT }] as any}>
+                    <View style={[styles.monthPickerContainer, { height: PICKER_HEIGHT }]}>
+                        <FlatList
+                            ref={monthPickerScrollRef as any}
+                            horizontal
+                            data={pickerItems}
+                            keyExtractor={(_, idx) => String(idx)}
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.monthPickerScrollContent}
+                            style={[styles.monthPickerContainer, { height: PICKER_HEIGHT }]}
+                            getItemLayout={(_, index) => ({ length: PICKER_ITEM_WIDTH, offset: PICKER_ITEM_WIDTH * index, index })}
+                            renderItem={({ item }) => {
+                                if (item.type === 'year') {
+                                    return (
+                                        <View style={[styles.inlineYearLabelContainer, { width: PICKER_ITEM_WIDTH }]}>
+                                            <Text style={styles.inlineYearLabel}>{item.year}</Text>
+                                        </View>
+                                    );
+                                }
+
+                                // month item
+                                const isSelectedMonth = selectedDate.getFullYear() === item.year && selectedDate.getMonth() === item.idx;
+                                return (
+                                    <View style={{ width: PICKER_ITEM_WIDTH, alignItems: 'center', justifyContent: 'center' }}>
+                                        <TouchableOpacity
+                                            style={[styles.monthButtonInline, isSelectedMonth && styles.selectedMonthButton]}
+                                            onPress={() => {
+                                                // When selecting a month, highlight today's date if it's in that month,
+                                                // otherwise highlight the 1st day of the selected month (like Google Calendar).
+                                                const today = new Date();
+                                                let newDate: Date;
+                                                if (today.getFullYear() === item.year && today.getMonth() === item.idx) {
+                                                    newDate = new Date(today);
+                                                } else {
+                                                    newDate = new Date(item.year, item.idx, 1);
+                                                }
+                                                // Keep the inline month picker open when selecting a month.
+                                                // Update the selected date and center the calendar immediately.
+                                                onSelectDate(newDate);
+                                                centerCalendar(newDate);
+                                            }}
+                                        >
+                                            <Text style={[styles.monthButtonTextInline, isSelectedMonth && styles.selectedMonthText]}>{item.label}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                );
+                            }}
+                        />
+                    </View>
+                </View>
+            )}
 
             {/* Day names header */}
             <View style={styles.dayNamesContainer}>
                 {dayNames.map(day => (
-                    <View key={day} style={[styles.dayNameCell, { width: cellSize, height: 60 }]}>
+                    <View key={day} style={[styles.dayNameCell, { width: cellSize }]}>
                         <Text style={styles.dayNameText}>{day}</Text>
                     </View>
                 ))}
@@ -193,7 +280,7 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 onMomentumScrollEnd={handleScrollEnd}
-                style={styles.gridContainer}
+                style={[styles.gridContainer, { height: FIXED_CALENDAR_HEIGHT }]}
             >
                 {months.map((month, monthIndex) => (
                     <View key={month.toISOString()} style={styles.monthPage}>
@@ -221,26 +308,31 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
                                                 height: cellHeight,
                                                 opacity: inCurrentMonth ? 1 : 0.3
                                             },
-                                            selected && styles.selectedDay,
-                                            today && !selected && styles.todayDay,
+                                            selected && styles.selectedDayCell,
                                         ]}
                                         onPress={() => onViewEvents ? onViewEvents(date) : onSelectDate(date)}
                                     >
-                                        <Text
-                                            style={[
-                                                styles.dayNumber,
-                                                selected && styles.selectedText,
-                                                today && !selected && styles.todayText,
-                                                !inCurrentMonth && styles.otherMonthText,
-                                            ]}
-                                        >
-                                            {date.getDate()}
-                                        </Text>
+                                        <View style={[
+                                            styles.dayNumberContainer,
+                                            selected && styles.selectedDayNumberContainer,
+                                            today && !selected && styles.todayDayNumberContainer
+                                        ]}>
+                                            <Text
+                                                style={[
+                                                    styles.dayNumber,
+                                                    selected && styles.selectedText,
+                                                    today && !selected && styles.todayText,
+                                                    !inCurrentMonth && styles.otherMonthText,
+                                                ]}
+                                            >
+                                                {date.getDate()}
+                                            </Text>
+                                        </View>
 
                                         {/* Events list */}
                                         {dayEvents.length > 0 && (
                                             <View style={styles.eventsList}>
-                                                {dayEvents.slice(0, 2).map((event) => (
+                                                {dayEvents.slice(0, 3).map((event) => (
                                                     <TouchableOpacity
                                                         key={event.id}
                                                         style={[styles.eventItem, { backgroundColor: event.color }]}
@@ -268,9 +360,9 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
                                                         </Text>
                                                     </TouchableOpacity>
                                                 ))}
-                                                {dayEvents.length > 2 && (
+                                                {dayEvents.length > 3 && (
                                                     <Text style={styles.moreEventsText}>
-                                                        +{dayEvents.length - 2} more
+                                                        +{dayEvents.length - 3}
                                                     </Text>
                                                 )}
                                             </View>
@@ -279,7 +371,7 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
                                 );
                             }}
                             style={styles.grid}
-                            contentContainerStyle={styles.gridContent}
+                            contentContainerStyle={[styles.gridContent, { paddingHorizontal }]}
                             showsVerticalScrollIndicator={false}
                             showsHorizontalScrollIndicator={false}
                         />
@@ -296,28 +388,23 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: Colors.light.background,
+        flexDirection: 'column',
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: responsive.spacing(16),
-        paddingVertical: responsive.spacing(16),
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb',
+        paddingVertical: responsive.spacing(12),
         backgroundColor: Colors.light.background,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
     },
-    navButton: {
+    monthPickerButton: {
         padding: responsive.spacing(8),
+        borderRadius: 8,
     },
     monthSelector: {
         flex: 1,
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     monthText: {
         fontSize: responsive.fontSize(18),
@@ -326,9 +413,9 @@ const styles = StyleSheet.create({
     },
     dayNamesContainer: {
         flexDirection: 'row',
-        paddingHorizontal: responsive.spacing(24),
+        paddingHorizontal: responsive.spacing(16),
         paddingVertical: responsive.spacing(8),
-        backgroundColor: '#f9fafb',
+        backgroundColor: Colors.light.background,
     },
     dayNameCell: {
         alignItems: 'center',
@@ -336,77 +423,178 @@ const styles = StyleSheet.create({
     },
     dayNameText: {
         fontSize: responsive.fontSize(12),
-        fontWeight: '600',
-        color: '#6b7280',
+        fontWeight: '500',
+        color: '#9ca3af',
+        textTransform: 'uppercase',
     },
     gridContainer: {
-        flex: 1,
+        // Use fixed height instead of flex for stable layout
+        overflow: 'hidden',
     },
     monthPage: {
         width: screenWidth,
-        flex: 1,
+        // Don't use flex; calendar height is controlled by parent
     },
     grid: {
         paddingVertical: responsive.spacing(8),
     },
     gridContent: {
-        paddingHorizontal: responsive.spacing(24),
         justifyContent: 'flex-start',
     },
     dayCell: {
         alignItems: 'center',
         justifyContent: 'flex-start',
-        padding: responsive.spacing(4),
-        margin: 1,
-        borderRadius: 8,
-        backgroundColor: Colors.light.background,
-        borderWidth: 1,
-        borderColor: '#e5e7eb',
+        paddingTop: responsive.spacing(4),
+        borderRadius: 12,
     },
-    selectedDay: {
+    selectedDayCell: {
+        backgroundColor: '#fff7ed',
+    },
+    dayNumberContainer: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: responsive.spacing(4),
+    },
+    selectedDayNumberContainer: {
         backgroundColor: Colors.light.tint,
-        borderColor: Colors.light.tint,
     },
-    todayDay: {
-        borderWidth: 2,
-        borderColor: Colors.light.tint,
+    todayDayNumberContainer: {
+        backgroundColor: '#f3f4f6',
     },
     dayNumber: {
-        fontSize: responsive.fontSize(16),
+        fontSize: responsive.fontSize(14),
         fontWeight: '600',
         color: Colors.light.text,
-        marginBottom: responsive.spacing(2),
     },
     selectedText: {
         color: '#fff',
     },
     todayText: {
         color: Colors.light.tint,
-        fontWeight: 'bold',
+        fontWeight: '700',
     },
     otherMonthText: {
-        color: '#9ca3af',
+        color: '#d1d5db',
     },
     eventsList: {
         width: '100%',
         alignItems: 'center',
+        paddingHorizontal: 2,
     },
     eventItem: {
-        width: '90%',
+        width: '100%',
         paddingHorizontal: responsive.spacing(4),
         paddingVertical: responsive.spacing(2),
-        borderRadius: 6,
+        borderRadius: 4,
         marginBottom: responsive.spacing(2),
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     eventTitle: {
-        fontSize: responsive.fontSize(10),
+        fontSize: responsive.fontSize(9),
         color: '#fff',
-        fontWeight: '500',
+        fontWeight: '600',
     },
     moreEventsText: {
-        fontSize: responsive.fontSize(10),
-        color: '#6b7280',
+        fontSize: responsive.fontSize(9),
+        color: '#9ca3af',
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    monthPickerContainer: {
+        backgroundColor: '#ffffff',
+        paddingHorizontal: responsive.spacing(8),
+        paddingVertical: responsive.spacing(2),
+        marginBottom: 0,
+    },
+    pickerInlineContainer: {
+        width: '100%',
+        backgroundColor: '#ffffff',
+        paddingVertical: 0,
+    },
+    monthPickerScrollContent: {
+        alignItems: 'flex-start',
+        paddingHorizontal: responsive.spacing(8),
+    },
+    inlineYearLabelContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: responsive.spacing(8),
+    },
+    inlineYearLabel: {
+        fontSize: responsive.fontSize(13),
+        fontWeight: '700',
+        color: Colors.light.text,
+    },
+    monthButtonInline: {
+        paddingVertical: responsive.spacing(5),
+        paddingHorizontal: responsive.spacing(10),
+        borderRadius: 8,
+        backgroundColor: '#f9fafb',
+        borderWidth: 0,
+        marginRight: responsive.spacing(6),
+        elevation: 0,
+    },
+    monthButtonTextInline: {
+        fontSize: responsive.fontSize(12),
+        color: Colors.light.text,
         fontWeight: '500',
+    },
+    yearColumn: {
+        width: responsive.width(60),
+        paddingHorizontal: responsive.spacing(8),
+        paddingVertical: responsive.spacing(6),
+        borderRightWidth: 1,
+        borderRightColor: '#f1f5f9',
+    },
+    monthsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: responsive.spacing(8),
+        marginTop: responsive.spacing(8),
+    },
+    yearSection: {
+        marginBottom: responsive.spacing(12),
+    },
+    yearLabel: {
+        fontSize: responsive.fontSize(13),
+        fontWeight: '700',
+        color: Colors.light.text,
+        marginBottom: responsive.spacing(8),
+    },
+    monthsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: responsive.spacing(8),
+    },
+    monthButton: {
+        // reduce vertical padding for compact list
+        paddingVertical: responsive.spacing(6),
+        paddingHorizontal: responsive.spacing(12),
+        borderRadius: 12,
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: '#eef2f6',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    monthButtonText: {
+        fontSize: responsive.fontSize(13),
+        color: Colors.light.text,
+        fontWeight: '600',
+    },
+    selectedMonthButton: {
+        backgroundColor: Colors.light.tint,
+        borderColor: Colors.light.tint,
+    },
+    selectedMonthText: {
+        color: '#fff',
     },
 });
 

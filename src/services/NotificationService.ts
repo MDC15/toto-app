@@ -1,14 +1,13 @@
-import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { reminderService } from '@/services/ReminderService';
 import {
+    INotificationService,
+    NotificationContent,
     ReminderConfig,
     ReminderResult,
-    NotificationContent,
-    INotificationService,
-    REMINDER_CONSTANTS,
     ReminderTime
 } from '@/types/reminder.types';
-import { reminderService } from '@/services/ReminderService';
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
 // ===============================
 // 🔔 NOTIFICATION SERVICE - PLATFORM INTEGRATION
@@ -31,7 +30,6 @@ class NotificationService implements INotificationService {
     private initializeNotificationHandler(): void {
         Notifications.setNotificationHandler({
             handleNotification: async () => ({
-                shouldShowAlert: true,
                 shouldPlaySound: true,
                 shouldSetBadge: true,
                 shouldShowBanner: true,

@@ -2,10 +2,9 @@ import AlertModal from '@/components/common/AlertModal';
 import DatePicker from '@/components/common/DatePicker';
 import { UnifiedReminderSelector } from '@/components/common/UnifiedReminderSelector';
 import ColorPick from '@/components/habits/ColorPick';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { getHabits, updateHabit } from '@/db/database';
 import { getDateString } from '@/utils/dateUtils';
-import { useNotifications } from '@/contexts/NotificationContext';
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -175,55 +174,68 @@ export default function EditHabit() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-            {/* Habit name */}
-            <Text style={styles.label}>Habit Name</Text>
-            <TextInput
-                value={habitName}
-                onChangeText={setHabitName}
-                placeholder="Enter habit name"
-                style={styles.input}
-            />
-
-            {/* Description */}
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Add details about your habit"
-                style={[styles.input, styles.descArea]}
-                multiline
-                textAlignVertical="top"
-            />
-
-            {/* Color Picker */}
-            <ColorPick
-                selectedColor={selectedColor}
-                onColorSelect={setSelectedColor}
-            />
-
-            {/* Options Card */}
-            <View style={styles.optionsCard}>
-                <View style={styles.optionRow}>
-                    <Ionicons name="repeat" size={20} color="#E16A00" />
-                    <Text style={styles.optionText}>Repeat</Text>
+            {/* Header Section with Color Preview */}
+            <View style={[styles.section, styles.headerSection, { borderLeftColor: selectedColor, borderLeftWidth: 5 }]}>
+                <View style={styles.headerRow}>
+                    <View style={styles.headerContent}>
+                        <Text style={styles.headerLabel}>Edit Habit</Text>
+                        <Text style={styles.headerSubtitle}>{habitName || 'Untitled'}</Text>
+                    </View>
+                    <View style={[styles.colorPreview, { backgroundColor: selectedColor }]} />
                 </View>
+            </View>
 
-                <View style={styles.dateSection}>
-                    <DatePicker
-                        label="Start Date"
-                        date={startDate}
-                        onChange={setStartDate}
-                        placeholder="Select start date"
-                    />
+            {/* Habit Details Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Details</Text>
 
-                    <DatePicker
-                        label="End Date"
-                        date={endDate}
-                        onChange={setEndDate}
-                        placeholder="Select end date"
-                    />
-                </View>
+                <Text style={styles.label}>Habit Name</Text>
+                <TextInput
+                    value={habitName}
+                    onChangeText={setHabitName}
+                    placeholder="Enter habit name"
+                    style={styles.input}
+                />
 
+                <Text style={[styles.label, { marginTop: 12 }]}>Description</Text>
+                <TextInput
+                    value={description}
+                    onChangeText={setDescription}
+                    placeholder="Add details about your habit"
+                    style={[styles.input, styles.descArea]}
+                    multiline
+                    textAlignVertical="top"
+                />
+
+                <Text style={[styles.label, { marginTop: 12 }]}>Color</Text>
+                <ColorPick
+                    selectedColor={selectedColor}
+                    onColorSelect={setSelectedColor}
+                />
+            </View>
+
+            {/* Schedule Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Schedule</Text>
+
+                <DatePicker
+                    label="Start Date"
+                    date={startDate}
+                    onChange={setStartDate}
+                    placeholder="Select start date"
+                />
+
+                <DatePicker
+                    label="End Date"
+                    date={endDate}
+                    onChange={setEndDate}
+                    placeholder="Select end date"
+                />
+            </View>
+
+            {/* Reminder Section */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Reminder</Text>
                 <UnifiedReminderSelector
                     type="habit"
                     enabled={reminderEnabled}
@@ -242,7 +254,7 @@ export default function EditHabit() {
 
             {/* Submit Button */}
             <TouchableOpacity style={styles.button} onPress={handleUpdateHabit}>
-                <Text style={styles.buttonText}>Update Habit</Text>
+                <Text style={styles.buttonText}>💾 Save Changes</Text>
             </TouchableOpacity>
 
             {/* Alert Modal */}
@@ -311,13 +323,38 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: 20,
+        paddingBottom: 40,
     },
+
+    // Header section with color preview
+    headerSection: { marginBottom: 24, backgroundColor: "#fafafa", paddingLeft: 16 },
+    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    headerContent: { flex: 1 },
+    headerLabel: { fontSize: 12, fontWeight: "600", color: "#9ca3af", textTransform: "uppercase" },
+    headerSubtitle: { fontSize: 20, fontWeight: "700", color: "#1f2937", marginTop: 4 },
+    colorPreview: { width: 48, height: 48, borderRadius: 8 },
+
+    // Form sections
+    section: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowOffset: { width: 0, height: 1 },
+        shadowRadius: 2,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+    },
+    sectionTitle: { fontSize: 14, fontWeight: "700", color: "#1f2937", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 },
+
     label: {
         fontSize: 15,
         fontWeight: '600',
         color: '#444',
         marginBottom: 6,
-        paddingTop: 10,
     },
     input: {
         borderWidth: 1,

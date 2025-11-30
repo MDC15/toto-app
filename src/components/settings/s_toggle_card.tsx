@@ -18,7 +18,7 @@ export default function ToggleCard({ hasPermission, isToggling, onToggle }: Togg
                     <Ionicons
                         name={hasPermission ? "notifications" : "notifications-off"}
                         size={20}
-                        color={hasPermission ? "#34C759" : "#999"}
+                        color={hasPermission ? "#fca131" : "#999"}
                     />
                 </View>
                 <View style={styles.toggleTextContainer}>
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 2,
     },
     toggleTrackOn: {
-        backgroundColor: "#34C759",
+        backgroundColor: "#fca131",
     },
     toggleTrackOff: {
         backgroundColor: "#E5E5EA",

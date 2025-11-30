@@ -92,7 +92,6 @@ export default function AddTaskScreen() {
 
         return unsubscribe;
     }, [navigation, title, description, priority, deadline, reminderTime, reminderEnabled, isCreatingTask]);
-
     // 🕓 Format time
     const formatTime = (d: Date) => {
         let h = d.getHours();

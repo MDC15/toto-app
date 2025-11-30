@@ -119,7 +119,7 @@ export default function EditTaskScreen() {
                     if (hasPermission) {
                         // Cancel existing notification
                         await cancelTaskNotification(idParam);
-                        
+
                         // Schedule new notification if reminder is enabled
                         if (reminderEnabled && reminderTime) {
                             await scheduleTaskNotification(
@@ -171,89 +171,101 @@ export default function EditTaskScreen() {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                {/* 📝 Title */}
-                <Text style={styles.label}>Task title</Text>
-                <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="What do you need to do?"
-                    value={title}
-                    onChangeText={setTitle}
-                    multiline
-                    returnKeyType="next"
-                    onSubmitEditing={() => descRef.current?.focus()}
-                />
+                {/* Basic Info Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Task Details</Text>
 
-                {/* 📄 Description */}
-                <Text style={styles.label}>Description (optional)</Text>
-                <TextInput
-                    ref={descRef}
-                    style={[styles.input, styles.descArea]}
-                    placeholder="Add details about your task"
-                    value={description}
-                    onChangeText={setDescription}
-                    multiline
-                    textAlignVertical="top"
-                />
+                    <Text style={styles.label}>Title</Text>
+                    <TextInput
+                        style={[styles.input, styles.textArea]}
+                        placeholder="What do you need to do?"
+                        value={title}
+                        onChangeText={setTitle}
+                        multiline
+                        returnKeyType="next"
+                        onSubmitEditing={() => descRef.current?.focus()}
+                    />
 
-                {/* 📅 Date & Time */}
-                <Text style={styles.label}>Date & Time</Text>
-                <View style={styles.row}>
-                    <TouchableOpacity
-                        style={[styles.box, styles.rowCenter]}
-                        onPress={() => setShowDatePicker(true)}
-                    >
-                        <Feather name="calendar" size={18} color="#333" />
-                        <Text style={styles.boxText}>{formatDate(deadline)}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.box, styles.rowCenter]}
-                        onPress={() => setShowTimePicker(true)}
-                    >
-                        <Feather name="clock" size={18} color="#333" />
-                        <Text style={styles.boxText}>{formatTime(deadline)}</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.label}>Description (optional)</Text>
+                    <TextInput
+                        ref={descRef}
+                        style={[styles.input, styles.descArea]}
+                        placeholder="Add details about your task"
+                        value={description}
+                        onChangeText={setDescription}
+                        multiline
+                        textAlignVertical="top"
+                    />
                 </View>
 
-                {/* 📆 Date Picker */}
-                {showDatePicker && (
-                    <DateTimePicker
-                        value={deadline}
-                        mode="date"
-                        display={Platform.OS === "ios" ? "spinner" : "default"}
-                        onChange={handleDateChange}
+                {/* Schedule Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Schedule</Text>
+
+                    <Text style={styles.label}>Date & Time</Text>
+                    <View style={styles.row}>
+                        <TouchableOpacity
+                            style={[styles.box, styles.rowCenter]}
+                            onPress={() => setShowDatePicker(true)}
+                        >
+                            <Feather name="calendar" size={18} color="#333" />
+                            <Text style={styles.boxText}>{formatDate(deadline)}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.box, styles.rowCenter]}
+                            onPress={() => setShowTimePicker(true)}
+                        >
+                            <Feather name="clock" size={18} color="#333" />
+                            <Text style={styles.boxText}>{formatTime(deadline)}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* 📆 Date Picker */}
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={deadline}
+                            mode="date"
+                            display={Platform.OS === "ios" ? "spinner" : "default"}
+                            onChange={handleDateChange}
+                        />
+                    )}
+
+                    {showTimePicker && (
+                        <DateTimePicker
+                            value={deadline}
+                            mode="time"
+                            is24Hour={false}
+                            display={Platform.OS === "ios" ? "spinner" : "default"}
+                            onChange={handleTimeChange}
+                        />
+                    )}
+                </View>
+
+                {/* Settings Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Settings</Text>
+
+                    <Text style={styles.label}>Priority</Text>
+                    <PrioritySelector value={priority} onChange={setPriority} />
+                </View>
+
+                {/* Reminders Section */}
+                <View style={styles.section}>
+                    <UnifiedReminderSelector
+                        type="task"
+                        enabled={reminderEnabled}
+                        onToggle={setReminderEnabled}
+                        value={reminderTime}
+                        onChange={setReminderTime}
+                        mainTime={deadline.toISOString()}
+                        disabled={!hasPermission}
                     />
-                )}
+                </View>
 
-                {/* ⏰ Time Picker */}
-                {showTimePicker && (
-                    <DateTimePicker
-                        value={deadline}
-                        mode="time"
-                        is24Hour={false}
-                        display={Platform.OS === "ios" ? "spinner" : "default"}
-                        onChange={handleTimeChange}
-                    />
-                )}
-
-                {/* 🔺 Priority */}
-                <Text style={styles.label}>Priority</Text>
-                <PrioritySelector value={priority} onChange={setPriority} />
-
-                {/* 🔔 Unified Reminder Selector */}
-                <UnifiedReminderSelector
-                    type="task"
-                    enabled={reminderEnabled}
-                    onToggle={setReminderEnabled}
-                    value={reminderTime}
-                    onChange={setReminderTime}
-                    mainTime={deadline.toISOString()}
-                    disabled={!hasPermission}
-                />
-
-                {/* ➕ Add Button */}
+                {/* Save Button */}
                 <TouchableOpacity style={styles.addButton} onPress={handleSaveTask}>
-                    <Text style={styles.addButtonText}>Save Task</Text>
+                    <Text style={styles.addButtonText}>💾 Save Changes</Text>
                 </TouchableOpacity>
             </ScrollView>
 
@@ -274,6 +286,18 @@ export default function EditTaskScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#fff" },
     content: { flexGrow: 1, padding: 20, paddingBottom: 40 },
+
+    // Form sections
+    section: {
+        marginBottom: 20,
+        padding: 16,
+        backgroundColor: "#f9fafb",
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: "#e5e7eb",
+    },
+    sectionTitle: { fontSize: 14, fontWeight: "700", color: "#1f2937", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 },
+
     label: { fontSize: 16, fontWeight: "600", color: "#374151", marginBottom: 6, paddingTop: 10 },
     input: {
         borderWidth: 1,
@@ -302,6 +326,7 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         borderRadius: 10,
         alignItems: "center",
+        marginTop: 16,
     },
     addButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
 });

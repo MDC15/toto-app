@@ -16,13 +16,13 @@ export default function StatusCard({ hasPermission }: StatusCardProps) {
                     <View
                         style={[
                             styles.statusDot,
-                            { backgroundColor: hasPermission ? "#34C759" : "#FF3B30" },
+                            { backgroundColor: hasPermission ? "#fca131" : "#FF3B30" },
                         ]}
                     />
                     <ThemedText
                         style={[
                             styles.statusTitle,
-                            { color: hasPermission ? "#34C759" : "#FF3B30" },
+                            { color: hasPermission ? "#fca131" : "#FF3B30" },
                         ]}
                     >
                         {hasPermission ? "Notifications Active" : "Notifications Inactive"}
@@ -31,7 +31,7 @@ export default function StatusCard({ hasPermission }: StatusCardProps) {
                 <Ionicons
                     name={hasPermission ? "checkmark-circle" : "close-circle"}
                     size={24}
-                    color={hasPermission ? "#34C759" : "#FF3B30"}
+                    color={hasPermission ? "#fca131" : "#FF3B30"}
                 />
             </View>
 

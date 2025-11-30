@@ -120,7 +120,8 @@ export const initDatabase = (): void => {
           deadline TEXT,
           priority TEXT,
           completed INTEGER DEFAULT 0,
-          reminder TEXT
+          reminder TEXT,
+          color TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_tasks_deadline ON tasks(deadline);
         CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
@@ -168,6 +169,7 @@ export const initDatabase = (): void => {
 
       // Add new columns if they don't exist (optimized)
       addColumnIfNotExists('tasks', 'reminder', 'TEXT');
+      addColumnIfNotExists('tasks', 'color', 'TEXT');
       addColumnIfNotExists('events', 'reminder', 'TEXT');
       addColumnIfNotExists('events', 'color', 'TEXT');
       addColumnIfNotExists('habits', 'start_date', 'TEXT');
@@ -205,13 +207,14 @@ export class BatchOperations {
     deadline: string;
     priority: string;
     reminder?: string;
+    color?: string;
   }>): Promise<void> {
     for (let i = 0; i < tasks.length; i += this.batchSize) {
       const batch = tasks.slice(i, i + this.batchSize);
 
       db.withTransactionSync(() => {
         const stmt = db.prepareSync(
-          'INSERT INTO tasks (title, description, deadline, priority, reminder, completed) VALUES (?, ?, ?, ?, ?, 0);'
+          'INSERT INTO tasks (title, description, deadline, priority, reminder, color, completed) VALUES (?, ?, ?, ?, ?, ?, 0);'
         );
 
         try {
@@ -221,7 +224,8 @@ export class BatchOperations {
               task.description,
               task.deadline,
               task.priority,
-              task.reminder || null
+              task.reminder || null,
+              task.color || null
             ]);
           }
         } finally {
@@ -313,11 +317,11 @@ export const getTasksPaginated = (page: number = 1, pageSize: number = 20, filte
 // ==========================
 // 📋 TASK FUNCTIONS với optimization
 // ==========================
-export const addTask = (title: string, description: string, deadline: string, priority: string, reminder?: string): number => {
+export const addTask = (title: string, description: string, deadline: string, priority: string, reminder?: string, color?: string): number => {
   try {
     const result = db.runSync(
-      `INSERT INTO tasks (title, description, deadline, priority, reminder, completed) VALUES (?, ?, ?, ?, ?, 0);`,
-      [title, description, deadline, priority, reminder || null]
+      `INSERT INTO tasks (title, description, deadline, priority, reminder, color, completed) VALUES (?, ?, ?, ?, ?, ?, 0);`,
+      [title, description, deadline, priority, reminder || null, color || null]
     );
     console.log('✅ Task added successfully');
     return result.lastInsertRowId as number;
@@ -344,12 +348,13 @@ export const updateTask = (
   deadline: string,
   priority: string,
   completed: boolean,
-  reminder?: string
+  reminder?: string,
+  color?: string
 ): void => {
   try {
     db.runSync(
-      `UPDATE tasks SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?, reminder = ? WHERE id = ?;`,
-      [title, description, deadline, priority, completed ? 1 : 0, reminder || null, id]
+      `UPDATE tasks SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?, reminder = ?, color = ? WHERE id = ?;`,
+      [title, description, deadline, priority, completed ? 1 : 0, reminder || null, color || null, id]
     );
     console.log(`✅ Task ${id} updated`);
   } catch (error) {

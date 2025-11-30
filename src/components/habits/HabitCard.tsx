@@ -1,6 +1,6 @@
 import { formatShortDate } from "@/utils/dateUtils";
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useRef, memo, useCallback, useMemo } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import {
     Animated,
     StyleSheet,

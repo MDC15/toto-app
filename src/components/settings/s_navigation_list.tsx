@@ -19,9 +19,9 @@ export default function NavigationList({ onItemPress }: NavigationListProps) {
             />
             <NavigationItem
                 icon="star"
-                title="Premium Features"
+                title="Upgrade Premium"
                 subtitle="Unlock advanced features"
-                onPress={() => router.push('/premium' as any)}
+                onPress={() => router.push('/pages/premium' as any)}
             />
             <NavigationItem
                 icon="document-text"

@@ -16,7 +16,7 @@ export default function GenericView({ title, content, onBack }: GenericViewProps
             <ThemedView style={styles.content}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#007AFF" />
+                        <Ionicons name="chevron-back" size={24} color="#fca131" />
                     </TouchableOpacity>
                     <ThemedText style={styles.title}>{title}</ThemedText>
                 </View>

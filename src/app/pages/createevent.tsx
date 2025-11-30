@@ -1,5 +1,6 @@
 import AlertModal from "@/components/common/AlertModal";
 import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
+import ColorPick from '@/components/habits/ColorPick';
 import { useEventReminders, useNotifications } from "@/contexts/NotificationContext";
 import { addEvent } from "@/db/database";
 import { Feather } from "@expo/vector-icons";
@@ -225,73 +226,52 @@ export default function CreateEventScreen() {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.label}>Event title</Text>
-                <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="What is the event?"
-                    value={title}
-                    onChangeText={setTitle}
-                    multiline
-                />
-
-                <Text style={styles.label}>Description (optional)</Text>
-                <TextInput
-                    style={[styles.input, styles.descArea]}
-                    placeholder="Add details about the event"
-                    value={description}
-                    onChangeText={setDescription}
-                    multiline
-                    textAlignVertical="top"
-                />
-
-                <UnifiedReminderSelector
-                    type="event"
-                    enabled={reminderEnabled}
-                    onToggle={setReminderEnabled}
-                    value={reminderTime as any} // Cast to string | null
-                    onChange={(value: string | null) => setReminderTime(value as any)} // Handle string | null
-                    mainTime={startTime.toISOString()}
-                    disabled={!hasPermission || isCreatingEvent}
-                />
-
-                <Text style={styles.label}>Event Color</Text>
-                <View style={styles.colorRow}>
-                    {[
-                        "#fed7aa", // Light Orange
-                        "#fecaca", // Light Red
-                        "#d1fae5", // Light Green
-                        "#dbeafe", // Light Blue
-                        "#e9d5ff", // Light Purple
-                        "#fef3c7", // Light Yellow
-                        "#fce7f3", // Light Pink
-                        "#cffafe", // Light Cyan
-                        "#ecfccb"  // Light Lime
-                    ].map((color, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={[styles.colorOption, { backgroundColor: color }, eventColor === color && styles.colorSelected]}
-                            onPress={() => setEventColor(color)}
-                        />
-                    ))}
+                <View style={styles.section}>
+                    <Text style={styles.label}>Event title</Text>
+                    <TextInput
+                        style={[styles.input, styles.textArea]}
+                        placeholder="What is the event?"
+                        value={title}
+                        onChangeText={setTitle}
+                        multiline
+                    />
                 </View>
 
-                <Text style={styles.label}>Start Time</Text>
-                <View style={styles.row}>
-                    <TouchableOpacity
-                        style={[styles.box, styles.rowCenter]}
-                        onPress={() => setShowStartDatePicker(true)}
-                    >
-                        <Feather name="calendar" size={18} color="#333" />
-                        <Text style={styles.boxText}>{startTime.toDateString()}</Text>
-                    </TouchableOpacity>
+                <View style={styles.section}>
+                    <Text style={styles.label}>Description (optional)</Text>
+                    <TextInput
+                        style={[styles.input, styles.descArea]}
+                        placeholder="Add details about the event"
+                        value={description}
+                        onChangeText={setDescription}
+                        multiline
+                        textAlignVertical="top"
+                    />
+                </View>
 
-                    <TouchableOpacity
-                        style={[styles.box, styles.rowCenter]}
-                        onPress={() => setShowStartTimePicker(true)}
-                    >
-                        <Feather name="clock" size={18} color="#333" />
-                        <Text style={styles.boxText}>{startTime.toLocaleTimeString()}</Text>
-                    </TouchableOpacity>
+                <View style={styles.section}>
+                    <ColorPick selectedColor={eventColor} onColorSelect={setEventColor} label="Event Color" />
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.label}>Start Time</Text>
+                    <View style={styles.row}>
+                        <TouchableOpacity
+                            style={[styles.box, styles.rowCenter]}
+                            onPress={() => setShowStartDatePicker(true)}
+                        >
+                            <Feather name="calendar" size={18} color="#6b7280" />
+                            <Text style={styles.boxText}>{startTime.toDateString()}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.box, styles.rowCenter]}
+                            onPress={() => setShowStartTimePicker(true)}
+                        >
+                            <Feather name="clock" size={18} color="#6b7280" />
+                            <Text style={styles.boxText}>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {showStartDatePicker && (
@@ -318,23 +298,25 @@ export default function CreateEventScreen() {
                     />
                 )}
 
-                <Text style={styles.label}>End Time</Text>
-                <View style={styles.row}>
-                    <TouchableOpacity
-                        style={[styles.box, styles.rowCenter]}
-                        onPress={() => setShowEndDatePicker(true)}
-                    >
-                        <Feather name="calendar" size={18} color="#333" />
-                        <Text style={styles.boxText}>{endTime.toDateString()}</Text>
-                    </TouchableOpacity>
+                <View style={styles.section}>
+                    <Text style={styles.label}>End Time</Text>
+                    <View style={styles.row}>
+                        <TouchableOpacity
+                            style={[styles.box, styles.rowCenter]}
+                            onPress={() => setShowEndDatePicker(true)}
+                        >
+                            <Feather name="calendar" size={18} color="#6b7280" />
+                            <Text style={styles.boxText}>{endTime.toDateString()}</Text>
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.box, styles.rowCenter]}
-                        onPress={() => setShowEndTimePicker(true)}
-                    >
-                        <Feather name="clock" size={18} color="#333" />
-                        <Text style={styles.boxText}>{endTime.toLocaleTimeString()}</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.box, styles.rowCenter]}
+                            onPress={() => setShowEndTimePicker(true)}
+                        >
+                            <Feather name="clock" size={18} color="#6b7280" />
+                            <Text style={styles.boxText}>{endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {showEndDatePicker && (
@@ -361,8 +343,20 @@ export default function CreateEventScreen() {
                     />
                 )}
 
+                <View style={styles.section}>
+                    <UnifiedReminderSelector
+                        type="event"
+                        enabled={reminderEnabled}
+                        onToggle={setReminderEnabled}
+                        value={reminderTime as any} // Cast to string | null
+                        onChange={(value: string | null) => setReminderTime(value as any)} // Handle string | null
+                        mainTime={startTime.toISOString()}
+                        disabled={!hasPermission || isCreatingEvent}
+                    />
+                </View>
+
                 <TouchableOpacity style={styles.addButton} onPress={handleAddEvent}>
-                    <Text style={styles.addButtonText}>+ Add Event</Text>
+                    <Text style={styles.addButtonText}>Create Event</Text>
                 </TouchableOpacity>
             </ScrollView>
 
@@ -383,48 +377,63 @@ export default function CreateEventScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff" },
+    container: { flex: 1, backgroundColor: "#f9fafb" },
     content: { flexGrow: 1, padding: 20, paddingBottom: 40 },
-    label: { fontSize: 16, fontWeight: "600", color: "#374151", marginBottom: 6, paddingTop: 10 },
+    section: {
+        backgroundColor: "#fff",
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    label: { fontSize: 14, fontWeight: "600", color: "#4b5563", marginBottom: 8 },
     input: {
         borderWidth: 1,
-        borderColor: "#d1d5db",
-        borderRadius: 10,
-        paddingHorizontal: 15,
+        borderColor: "#e5e7eb",
+        borderRadius: 8,
+        paddingHorizontal: 12,
         fontSize: 15,
-        color: "#111",
-        marginBottom: 18,
+        color: "#1f2937",
+        backgroundColor: "#f9fafb",
     },
     textArea: { minHeight: 48, maxHeight: 120, paddingVertical: 12, textAlignVertical: "top" },
     descArea: { minHeight: 100, maxHeight: 300, paddingVertical: 12 },
-    row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 18 },
+    row: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
     rowCenter: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
     box: {
         flex: 1,
         borderWidth: 1,
-        borderColor: "#d1d5db",
-        borderRadius: 10,
+        borderColor: "#e5e7eb",
+        borderRadius: 8,
         paddingVertical: 12,
-        marginRight: 10,
+        backgroundColor: "#f9fafb",
     },
-    boxText: { marginLeft: 8, fontSize: 15, color: "#111" },
+    boxText: { marginLeft: 8, fontSize: 14, color: "#374151", fontWeight: "500" },
     addButton: {
         backgroundColor: "#f97316",
-        paddingVertical: 15,
-        borderRadius: 10,
+        paddingVertical: 16,
+        borderRadius: 12,
         alignItems: "center",
-        marginTop: 20,
+        marginTop: 8,
+        shadowColor: "#f97316",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
     },
-    addButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-    colorRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap" },
+    addButtonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+    colorRow: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 8 },
     colorOption: {
-        width: 35,
-        height: 35,
-        borderRadius: 17.5,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         borderWidth: 2,
-        borderColor: "#d1d5db",
-        marginHorizontal: 2,
+        borderColor: "transparent",
     },
-    colorSelected: { borderColor: "#000", borderWidth: 3 },
+    colorSelected: { borderColor: "#1f2937", borderWidth: 2, transform: [{ scale: 1.1 }] },
 });
 

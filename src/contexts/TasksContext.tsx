@@ -4,9 +4,9 @@ import React, {
     useCallback,
     useContext,
     useEffect,
+    useMemo,
     useRef,
-    useState,
-    useMemo
+    useState
 } from "react";
 import {
     addTask as dbAddTask,
@@ -29,6 +29,7 @@ export type Task = {
     priority: "High" | "Medium" | "Low";
     deadline: string; // 2025-05-15
     reminder?: string; // Reminder time
+    color?: string; // Task color
     completed: boolean;
 };
 
@@ -92,6 +93,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
                     priority: t.priority as "High" | "Medium" | "Low",
                     deadline: deadline.toISOString(),
                     reminder: t.reminder,
+                    color: t.color,
                     completed: !!t.completed,
                 } as Task;
             });
@@ -133,7 +135,8 @@ export function TasksProvider({ children }: { children: ReactNode }) {
                 task.description ?? "",
                 task.deadline,
                 task.priority,
-                task.reminder
+                task.reminder,
+                task.color
             );
 
             // Use ref to avoid dependency issues
@@ -178,7 +181,8 @@ export function TasksProvider({ children }: { children: ReactNode }) {
                 deadline.toISOString(),
                 merged.priority,
                 merged.completed,
-                merged.reminder
+                merged.reminder,
+                merged.color
             );
 
             // Cancel existing notification

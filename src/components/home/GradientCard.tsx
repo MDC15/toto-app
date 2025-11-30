@@ -69,16 +69,16 @@ export default function GradientCard({
 
 const styles = StyleSheet.create({
     card: {
-        borderRadius: responsive.spacing(10),
+        borderRadius: responsive.spacing(16),
         padding: responsive.spacing(16),
-        width: responsive.width(55), // Responsive width based on screen size
-        height: responsive.height(15), // Responsive height
+        width: responsive.width(42),
+        height: responsive.height(16),
         justifyContent: 'space-between',
         shadowColor: '#000',
         shadowOpacity: 0.1,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 3,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
     },
     title: {
         color: '#fff',

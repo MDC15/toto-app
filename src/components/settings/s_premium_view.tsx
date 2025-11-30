@@ -14,7 +14,7 @@ export default function PremiumView({ onBack }: PremiumViewProps) {
             <ThemedView style={styles.content}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#007AFF" />
+                        <Ionicons name="chevron-back" size={24} color="#fca131" />
                     </TouchableOpacity>
                     <ThemedText style={styles.title}>Premium Features</ThemedText>
                 </View>
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     upgradeButton: {
-        backgroundColor: "#007AFF",
+        backgroundColor: "#fca131",
         paddingVertical: 16,
         paddingHorizontal: 32,
         borderRadius: 12,

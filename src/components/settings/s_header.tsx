@@ -14,7 +14,7 @@ export default function HeaderSection({ hasPermission }: HeaderSectionProps) {
                 <Ionicons
                     name="notifications"
                     size={32}
-                    color={hasPermission ? "#34C759" : "#FF9500"}
+                    color={hasPermission ? "#fca131" : "#34C759"}
                 />
             </View>
             <ThemedText style={styles.headerTitle}>Notification</ThemedText>

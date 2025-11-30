@@ -15,16 +15,16 @@ export default function HelpSection() {
 
 const styles = StyleSheet.create({
     helpSection: {
-        backgroundColor: "#f0f8ff",
+        backgroundColor: "#FFF9F0",
         borderRadius: 12,
         padding: 16,
         borderLeftWidth: 4,
-        borderLeftColor: "#007AFF",
+        borderLeftColor: "#fca131",
     },
     helpTitle: {
         fontSize: 16,
         fontWeight: "600",
-        color: "#007AFF",
+        color: "#fca131",
         marginBottom: 8,
     },
     helpText: {
