@@ -370,6 +370,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 24,
         borderRadius: 14,
+        marginHorizontal: 16,
     },
     headerOrange: {
         backgroundColor: ORANGE_COLOR,
