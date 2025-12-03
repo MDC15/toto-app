@@ -264,8 +264,9 @@ export default function EditTaskScreen() {
                 </View>
 
                 {/* Save Button */}
-                <TouchableOpacity style={styles.addButton} onPress={handleSaveTask}>
-                    <Text style={styles.addButtonText}>💾 Save Changes</Text>
+                <TouchableOpacity style={[styles.addButton, { flexDirection: 'row', justifyContent: 'center' }]} onPress={handleSaveTask}>
+                    <Feather name="check" size={20} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.addButtonText}>Save Changes</Text>
                 </TouchableOpacity>
             </ScrollView>
 
