@@ -208,7 +208,6 @@ export default function EditHabit() {
                     textAlignVertical="top"
                 />
 
-                <Text style={[styles.label, { marginTop: 12 }]}>Color</Text>
                 <ColorPick
                     selectedColor={selectedColor}
                     onColorSelect={setSelectedColor}
