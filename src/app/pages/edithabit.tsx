@@ -1,10 +1,4 @@
-import AlertModal from '@/components/common/AlertModal';
-import DatePicker from '@/components/common/DatePicker';
-import { UnifiedReminderSelector } from '@/components/common/UnifiedReminderSelector';
-import ColorPick from '@/components/habits/ColorPick';
-import { useNotifications } from '@/contexts/NotificationContext';
-import { getHabits, updateHabit } from '@/db/database';
-import { getDateString } from '@/utils/dateUtils';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -254,7 +248,8 @@ export default function EditHabit() {
 
             {/* Submit Button */}
             <TouchableOpacity style={styles.button} onPress={handleUpdateHabit}>
-                <Text style={styles.buttonText}>💾 Save Changes</Text>
+                <Feather name="check" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.buttonText}>Save Changes</Text>
             </TouchableOpacity>
 
             {/* Alert Modal */}
@@ -462,6 +457,8 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         marginBottom: 45,
         alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
         elevation: 2,
         shadowColor: '#f97316',
         shadowOpacity: 0.3,
@@ -519,9 +516,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#f3f4f6',
     },
     confirmButton: {
-        backgroundColor: '#f97316',
-    },
-    cancelButtonText: {
         color: '#666',
         fontSize: 16,
         fontWeight: '600',
