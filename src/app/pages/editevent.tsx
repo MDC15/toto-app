@@ -159,20 +159,20 @@ export default function EditEventScreen() {
             style={styles.container}
             behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
+            {/* Header Section with Orange Accent */}
+            <View style={[styles.header, styles.headerOrange]}>
+                <View style={styles.headerContent}>
+                    <Text style={styles.headerLabel}>Edit Event</Text>
+                    <Text style={styles.headerTitle} numberOfLines={2}>{title || 'Untitled Event'}</Text>
+                    <Text style={styles.headerSubtitle}>{formatDateRange()}</Text>
+                </View>
+            </View>
+
             <ScrollView
                 contentContainerStyle={styles.content}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header Section with Orange Accent */}
-                <View style={[styles.header, styles.headerOrange]}>
-                    <View style={styles.headerContent}>
-                        <Text style={styles.headerLabel}>Edit Event</Text>
-                        <Text style={styles.headerTitle} numberOfLines={2}>{title || 'Untitled Event'}</Text>
-                        <Text style={styles.headerSubtitle}>{formatDateRange()}</Text>
-                    </View>
-                </View>
-
                 {/* Event Title Section */}
                 <View style={styles.section}>
                     <View style={styles.inputGroup}>
@@ -371,6 +371,7 @@ const styles = StyleSheet.create({
         paddingBottom: 24,
         borderRadius: 14,
         marginHorizontal: 16,
+        marginBottom: 14,
     },
     headerOrange: {
         backgroundColor: ORANGE_COLOR,
