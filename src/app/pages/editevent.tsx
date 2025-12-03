@@ -164,7 +164,7 @@ export default function EditEventScreen() {
             {/* Header Section with Orange Accent */}
             <View style={[styles.header, { backgroundColor: eventColor }]}>
                 <View style={styles.headerContent}>
-                    <Text style={styles.headerLabel}>Edit Event</Text>
+                    <Text style={styles.headerLabel}>Preview Card</Text>
                     <Text style={styles.headerTitle} numberOfLines={2}>{title || 'Untitled Event'}</Text>
                     <Text style={styles.headerSubtitle}>{formatDateRange()}</Text>
                     {description ? (
