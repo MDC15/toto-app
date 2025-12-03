@@ -13,11 +13,10 @@ import {
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { initDatabase } from '../db/database';
-import { Platform } from 'react-native';
-import * as NavigationBar from 'expo-navigation-bar';
 
 // Set the initial route to the (tabs) layout
 export const unstable_settings = {
@@ -31,20 +30,16 @@ export default function RootLayout() {
 
   useEffect(() => {
     initDatabase();
-
-    if (Platform.OS === 'android') {
-      const setNavBar = async () => {
-        const backgroundColor = colorScheme === 'dark' ? '#151718' : '#fff';
-        const buttonStyle = colorScheme === 'dark' ? 'light' : 'dark';
-        await NavigationBar.setBackgroundColorAsync(backgroundColor);
-        await NavigationBar.setButtonStyleAsync(buttonStyle);
-      };
-      setNavBar();
-    }
   }, [colorScheme]);
 
+  // Thêm style cho GestureHandlerRootView để phù hợp với edge-to-edge
+  const rootViewStyle = {
+    flex: 1,
+    backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
+  };
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={rootViewStyle}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <UserProvider>
           <NotificationProvider>
@@ -58,10 +53,17 @@ export default function RootLayout() {
                         backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
                       },
                       headerTintColor: colorScheme === 'dark' ? '#fff' : '#000',
-                      headerTitleStyle: { fontWeight: '600', fontSize: responsive.fontSize(24) },
+                      headerTitleStyle: {
+                        fontWeight: '600',
+                        fontSize: responsive.fontSize(24)
+                      },
+                      // Thêm padding cho content để tránh bị navigation bar che
+                      contentStyle: {
+                        paddingBottom: Platform.OS === 'android' ? 16 : 0,
+                      }
                     }}
                   >
-                    <Stack.Screen name="index" options={{ headerShown: false, }} />
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                     <Stack.Screen name="pages/permission" options={{ headerShown: false, title: 'Add New Task Template', headerLeft: () => null }} />
                     <Stack.Screen name="pages/addtask" options={{ headerShown: true, title: 'Add New Task', headerLeft: () => null }} />
@@ -77,7 +79,8 @@ export default function RootLayout() {
                     <Stack.Screen name="pages/settings" options={{ headerShown: true, title: 'Settings' }} />
                     <Stack.Screen name="pages/premium" options={{ headerShown: false, presentation: 'modal' }} />
                   </Stack>
-                  <StatusBar style="auto" />
+                  {/* Đảm bảo StatusBar phù hợp với theme */}
+                  <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 </CakeProvider>
               </TasksProvider>
             </CalendarProvider>

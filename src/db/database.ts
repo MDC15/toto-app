@@ -201,14 +201,14 @@ const addColumnIfNotExists = (table: string, column: string, type: string): void
 export class BatchOperations {
   private static batchSize = 100;
 
-  public static async batchInsertTasks(tasks: Array<{
+  public static async batchInsertTasks(tasks: {
     title: string;
     description: string;
     deadline: string;
     priority: string;
     reminder?: string;
     color?: string;
-  }>): Promise<void> {
+  }[]): Promise<void> {
     for (let i = 0; i < tasks.length; i += this.batchSize) {
       const batch = tasks.slice(i, i + this.batchSize);
 
@@ -235,7 +235,7 @@ export class BatchOperations {
     }
   }
 
-  public static async batchUpdateTasks(updates: Array<{
+  public static async batchUpdateTasks(updates: {
     id: number;
     title?: string;
     description?: string;
@@ -243,7 +243,7 @@ export class BatchOperations {
     priority?: string;
     completed?: boolean;
     reminder?: string;
-  }>): Promise<void> {
+  }[]): Promise<void> {
     for (let i = 0; i < updates.length; i += this.batchSize) {
       const batch = updates.slice(i, i + this.batchSize);
 
