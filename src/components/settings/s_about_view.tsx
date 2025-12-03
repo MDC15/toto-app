@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import React from "react";
 import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 
@@ -18,23 +18,22 @@ export default function AboutView({ onBack }: AboutViewProps) {
             <ThemedView style={styles.content}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#fca131" />
+                        <AntDesign name="close" size={24} color="#fca131" />
                     </TouchableOpacity>
-                    <ThemedText style={styles.title}>About TodoList</ThemedText>
                 </View>
 
                 <View style={styles.appIconContainer}>
                     <View style={styles.appIcon}>
                         <MaterialIcons name="check-circle" size={48} color="#fca131" />
                     </View>
-                    <ThemedText style={styles.appName}>TodoList Pro</ThemedText>
+                    <ThemedText style={styles.appName}>TodoList App</ThemedText>
                     <ThemedText style={styles.appVersion}>Version 1.0.0</ThemedText>
                 </View>
 
                 <View style={styles.section}>
                     <ThemedText style={styles.sectionTitle}>About</ThemedText>
                     <ThemedText style={styles.description}>
-                        TodoList Pro is a comprehensive productivity app designed to streamline your daily life. From managing tasks and tracking habits to scheduling events, we help you stay organized and achieve your goals efficiently.
+                        TodoList App is a comprehensive productivity app designed to streamline your daily life. From managing tasks and tracking habits to scheduling events, we help you stay organized and achieve your goals efficiently.
                     </ThemedText>
                 </View>
 
@@ -60,8 +59,8 @@ export default function AboutView({ onBack }: AboutViewProps) {
 
                 <View style={styles.section}>
                     <ThemedText style={styles.sectionTitle}>Developer</ThemedText>
-                    <ThemedText style={styles.description}>Developed by MDC Team</ThemedText>
-                    <ThemedText style={styles.description}>© 2024 All rights reserved</ThemedText>
+                    <ThemedText style={styles.description}>Developed by TL Studio</ThemedText>
+                    <ThemedText style={styles.description}>© 2025 All rights reserved</ThemedText>
                 </View>
 
                 <View style={styles.section}>
@@ -75,14 +74,14 @@ export default function AboutView({ onBack }: AboutViewProps) {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.linkItem}
-                        onPress={() => handleLinkPress('https://todolistpro.com/privacy')}
+                        onPress={() => handleLinkPress('https://www.example.com/privacy-policy')}
                     >
                         <Ionicons name="shield-checkmark" size={20} color="#fca131" />
                         <ThemedText style={styles.linkText}>Privacy Policy</ThemedText>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.linkItem}
-                        onPress={() => handleLinkPress('https://todolistpro.com/terms')}
+                        onPress={() => handleLinkPress('https://www.example.com/terms-of-service')}
                     >
                         <Ionicons name="document-text" size={20} color="#fca131" />
                         <ThemedText style={styles.linkText}>Terms of Service</ThemedText>
@@ -132,11 +131,6 @@ const styles = StyleSheet.create({
     },
     backButton: {
         marginRight: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: "#333",
     },
     appIconContainer: {
         alignItems: "center",

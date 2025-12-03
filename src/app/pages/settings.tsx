@@ -22,18 +22,8 @@ export default function Settings() {
     const handleNavigation = async (key: string) => {
         if (key === 'rate') {
             setShowRatingModal(true);
-        } else if (key === 'terms') {
-            try {
-                await WebBrowser.openBrowserAsync('https://www.example.com/terms-of-service');
-            } catch (error) {
-                console.log('Could not open terms URL:', error);
-            }
-        } else if (key === 'privacy') {
-            try {
-                await WebBrowser.openBrowserAsync('https://www.example.com/privacy-policy');
-            } catch (error) {
-                console.log('Could not open privacy URL:', error);
-            }
+        } else if (key === 'terms' || key === 'privacy') {
+            setCurrentView('about');
         } else if (key === 'help') {
             try {
                 await WebBrowser.openBrowserAsync('https://www.example.com/support');
