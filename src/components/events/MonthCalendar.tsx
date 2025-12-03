@@ -176,7 +176,7 @@ const MonthCalendar: React.FC<MonthCalendarProps> = React.memo(({
     const paddingHorizontal = responsive.spacing(16);
     const cellSize = (screenWidth - paddingHorizontal * 2) / 7;
     // Fixed cell height: consistent calendar size regardless of picker state (like Google Calendar)
-    const cellHeight = cellSize * 1.5;
+    const cellHeight = cellSize * 2.2;
     // Fixed calendar container height: always stable layout, no flex resizing
     const FIXED_CALENDAR_HEIGHT = cellSize * 1.5 * 6; // 6 rows of calendar days
 
