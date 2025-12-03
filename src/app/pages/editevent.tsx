@@ -167,6 +167,11 @@ export default function EditEventScreen() {
                     <Text style={styles.headerLabel}>Edit Event</Text>
                     <Text style={styles.headerTitle} numberOfLines={2}>{title || 'Untitled Event'}</Text>
                     <Text style={styles.headerSubtitle}>{formatDateRange()}</Text>
+                    {description ? (
+                        <Text style={styles.headerDescription} numberOfLines={2}>
+                            {description}
+                        </Text>
+                    ) : null}
                 </View>
             </View>
 
@@ -398,6 +403,12 @@ const styles = StyleSheet.create({
     headerLabel: { fontSize: 11, fontWeight: "700", color: "rgba(255, 255, 255, 0.7)", textTransform: "uppercase", letterSpacing: 1 },
     headerTitle: { fontSize: 28, fontWeight: "800", color: "#fff", marginTop: 12, lineHeight: 36, letterSpacing: -0.5 },
     headerSubtitle: { fontSize: 13, color: "rgba(255, 255, 255, 0.85)", marginTop: 6, fontWeight: "600" },
+    headerDescription: {
+        fontSize: 13,
+        color: "rgba(255, 255, 255, 0.8)",
+        marginTop: 6,
+        lineHeight: 18,
+    },
 
     // Form sections
     section: {
