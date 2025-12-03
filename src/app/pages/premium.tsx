@@ -40,10 +40,10 @@ export default function Premium() {
             iconType: "Ionicons"
         },
         {
-            icon: "widgets-outline",
+            icon: "apps-outline",
             title: "Home Screen Widgets",
             description: "Access your tasks quickly with customizable home screen widgets.",
-            iconType: "MaterialIcons"
+            iconType: "Ionicons"
         }
     ];
 
