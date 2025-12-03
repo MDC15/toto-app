@@ -1,5 +1,6 @@
 import AlertModal from "@/components/common/AlertModal";
 import { UnifiedReminderSelector } from "@/components/common/UnifiedReminderSelector";
+import ColorPick from '@/components/habits/ColorPick';
 
 import { useEventReminders, useNotifications } from "@/contexts/NotificationContext";
 import { getEvents, updateEvent } from "@/db/database";
@@ -36,7 +37,7 @@ export default function EditEventScreen() {
     React.useEffect(() => {
         console.log('EditEvent: Reminder state - enabled:', reminderEnabled, 'time:', reminderTime);
     }, [reminderEnabled, reminderTime]);
-    const eventColor = "#f97316"; // Orange color theme
+    const [eventColor, setEventColor] = useState("#f97316"); // Changed from const to useState
 
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showStartTimePicker, setShowStartTimePicker] = useState(false);
@@ -71,6 +72,7 @@ export default function EditEventScreen() {
                     setEndTime(new Date(event.end_time));
                     setReminderEnabled(!!event.reminder);
                     setReminderTime(event.reminder || null);
+                    setEventColor(event.color || "#f97316"); // Initialize eventColor
                 }
             } catch (error) {
                 console.error("Error loading event:", error);
@@ -208,6 +210,11 @@ export default function EditEventScreen() {
                             textAlignVertical="top"
                         />
                     </View>
+                </View>
+
+                {/* Event Color Section */}
+                <View style={styles.section}>
+                    <ColorPick selectedColor={eventColor} onColorSelect={setEventColor} label="Event Color" />
                 </View>
 
                 {/* Date & Time Section - Google Calendar Style */}
