@@ -16,7 +16,8 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { initDatabase } from '../db/database';
-
+import { Platform } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 
 // Set the initial route to the (tabs) layout
 export const unstable_settings = {
@@ -30,7 +31,17 @@ export default function RootLayout() {
 
   useEffect(() => {
     initDatabase();
-  }, []);
+
+    if (Platform.OS === 'android') {
+      const setNavBar = async () => {
+        const backgroundColor = colorScheme === 'dark' ? '#151718' : '#fff';
+        const buttonStyle = colorScheme === 'dark' ? 'light' : 'dark';
+        await NavigationBar.setBackgroundColorAsync(backgroundColor);
+        await NavigationBar.setButtonStyleAsync(buttonStyle);
+      };
+      setNavBar();
+    }
+  }, [colorScheme]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
