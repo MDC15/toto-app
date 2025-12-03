@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     card: {
         borderRadius: responsive.spacing(16),
         padding: responsive.spacing(16),
-        width: responsive.width(42),
+        width: responsive.width(52),
         height: responsive.height(16),
         justifyContent: 'space-between',
         shadowColor: '#000',
