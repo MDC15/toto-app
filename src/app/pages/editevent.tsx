@@ -162,7 +162,7 @@ export default function EditEventScreen() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
             {/* Header Section with Orange Accent */}
-            <View style={[styles.header, styles.headerOrange]}>
+            <View style={[styles.header, { backgroundColor: eventColor }]}>
                 <View style={styles.headerContent}>
                     <Text style={styles.headerLabel}>Edit Event</Text>
                     <Text style={styles.headerTitle} numberOfLines={2}>{title || 'Untitled Event'}</Text>
