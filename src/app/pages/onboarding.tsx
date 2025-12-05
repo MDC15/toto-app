@@ -1,63 +1,83 @@
-import { OnboardingButton } from '@/components/onboarding/OnboardingButton';
-import { OnboardingPage } from '@/components/onboarding/OnboardingPag';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
-import PagerView from 'react-native-pager-view';
+import { LastOnboardingPage } from "@/components/onboarding/LastOnboardingPage";
+import { OnboardingButton } from "@/components/onboarding/OnboardingButton";
+import { OnboardingPage } from "@/components/onboarding/OnboardingPag";
+import { router } from "expo-router";
+import React, { useCallback, useRef, useState } from "react";
+import { Animated, StyleSheet, View } from "react-native";
+import PagerView from "react-native-pager-view";
 
 const pages = [
     {
-        id: '1',
-        image: require('../../../assets/images/inapp/Onboarding.png'),
-        title: 'Welcome back To-Do App',
-        subtitle: 'Organize your life easily.',
+        id: "1",
+        image: require("../../../assets/images/onboarding/plan.png"),
+        titleBold: "Plan easily",
+        title: "Achieve more",
+        subtitle: "Manage your tasks, events, and habits\nall in one place.",
+        backgroundColor: "#fefefe",
     },
     {
-        id: '2',
-        image: require('../../../assets/images/inapp/Onboarding.png'),
-        title: 'Effective work management',
-        subtitle: 'Add, edit, and delete jobs quickly.',
+        id: "2",
+        image: require("../../../assets/images/onboarding/tasks.png"),
+        titleBold: "Stay on top of",
+        title: "your daily tasks",
+        subtitle: "Create tasks, set priorities, and\nget timely reminders.",
+        backgroundColor: "#fefefe",
+    },
+    {
+        id: "3",
+        image: require("../../../assets/images/onboarding/schedule.png"),
+        titleBold: "Keep your",
+        title: "schedule organized",
+        subtitle: "Organize events and important\ndates easily.",
+        backgroundColor: "#fefefe",
+    },
+    {
+        id: "4",
+        image: require("../../../assets/images/onboarding/habits.png"),
+        titleBold: "Build better habits",
+        title: "one day at a time",
+        subtitle: "Check in daily to maintain\nyour streak.",
+        backgroundColor: "#fefefe",
+    },
+    {
+        id: "5",
+        backgroundColor: "#fefefe",
     },
 ];
 
 export default function OnboardingScreen() {
     const pagerRef = useRef<PagerView>(null);
     const [currentPage, setCurrentPage] = useState(0);
+
     const scrollOffset = useRef(new Animated.Value(0)).current;
     const position = useRef(new Animated.Value(0)).current;
 
-    const onPageScroll = useCallback(
-        (event: { nativeEvent: { offset: number; position: number } }) => {
-            scrollOffset.setValue(event.nativeEvent.offset);
-            position.setValue(event.nativeEvent.position);
-        },
-        [position, scrollOffset]
-    );
+    const onPageScroll = useCallback((event: any) => {
+        scrollOffset.setValue(event.nativeEvent.offset);
+        position.setValue(event.nativeEvent.position);
+    }, [position, scrollOffset]);
 
-    const onPageSelected = useCallback(
-        (event: { nativeEvent: { position: number } }) => {
-            setCurrentPage(event.nativeEvent.position);
-        },
-        []
-    );
+    const onPageSelected = useCallback((event: any) => {
+        setCurrentPage(event.nativeEvent.position);
+    }, []);
 
     const handleNext = () => {
         if (currentPage < pages.length - 1) {
             pagerRef.current?.setPage(currentPage + 1);
         } else {
-            router.replace('/pages/permission'); // ✅ sang trang xin quyền
+            router.replace("/pages/permission");
         }
     };
 
     const handleSkip = () => {
-        router.replace('/pages/permission'); // ✅ bỏ qua luôn onboarding
+        router.replace("/pages/permission");
     };
 
     const isLastPage = currentPage === pages.length - 1;
+    const showSkipButton = currentPage > 0 && currentPage < pages.length - 1;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: pages[currentPage].backgroundColor }]}>
             <PagerView
                 ref={pagerRef}
                 style={styles.pagerView}
@@ -67,39 +87,46 @@ export default function OnboardingScreen() {
             >
                 {pages.map((page, index) => (
                     <View key={page.id}>
-                        <OnboardingPage
-                            page={page}
-                            index={index}
-                            scrollOffset={scrollOffset}
-                            position={position}
-                        />
+                        {index === pages.length - 1 ? (
+                            <LastOnboardingPage />
+                        ) : (
+                            <OnboardingPage
+                                page={page}
+                                index={index}
+                                scrollOffset={scrollOffset}
+                                position={position}
+                            />
+                        )}
                     </View>
                 ))}
             </PagerView>
 
-            {/* Gradient overlay ở dưới */}
-            <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.5)']}
-                style={styles.gradientOverlay}
-            />
+            {/* Pagination dots */}
+            <View style={styles.dotsWrapper}>
+                {pages.map((_, i) => (
+                    <View
+                        key={i}
+                        style={[
+                            styles.dot,
+                            i === currentPage && styles.dotActive,
+                        ]}
+                    />
+                ))}
+            </View>
 
-            {/* Nút điều hướng */}
-            <View
-                style={[
-                    styles.buttonContainer,
-                    isLastPage && styles.centerButtonContainer,
-                ]}
-            >
-                {!isLastPage && (
+            {/* Buttons */}
+            <View style={[styles.buttonContainer, isLastPage && styles.centerButton, !showSkipButton && !isLastPage && styles.rightAlignButton]}>
+                {showSkipButton && (
                     <OnboardingButton
                         onPress={handleSkip}
                         title="Skip"
-                        variant="secondary"
+                        variant="text"
                     />
                 )}
+
                 <OnboardingButton
                     onPress={handleNext}
-                    title={isLastPage ? 'Get Started' : 'Continue'}
+                    title={isLastPage ? "Get Started" : "Next"}
                     variant="primary"
                 />
             </View>
@@ -110,24 +137,37 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     pagerView: { flex: 1 },
-    gradientOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 180,
+
+    dotsWrapper: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 20,
+        gap: 8,
     },
+
+    dot: {
+        width: 8,
+        height: 8,
+        marginBlock: 24,
+        borderRadius: 4,
+        backgroundColor: "#ddd",
+    },
+    dotActive: {
+        width: 20,
+        backgroundColor: "#ff9800",
+    },
+
     buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 24,
-        paddingBottom: 60,
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        paddingHorizontal: 30,
+        paddingBottom: 40,
     },
-    centerButtonContainer: {
-        justifyContent: 'center',
+    centerButton: {
+        justifyContent: "center",
+    },
+    rightAlignButton: {
+        justifyContent: "flex-end",
     },
 });

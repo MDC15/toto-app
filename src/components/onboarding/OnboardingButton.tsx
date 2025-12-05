@@ -1,20 +1,39 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
 
 interface OnboardingButtonProps {
     title: string;
     onPress: () => void;
-    variant: 'primary' | 'secondary';
+    variant: 'primary' | 'secondary' | 'text';
+    style?: ViewStyle | TextStyle; // Add style prop for custom styling
 }
 
 export function OnboardingButton(
-    { title, onPress, variant }: OnboardingButtonProps) {
-    const buttonStyle = variant === 'primary' ? styles.primaryButton : styles.secondaryButton;
-    const textStyle = variant === 'primary' ? styles.primaryButtonText : styles.secondaryButtonText;
+    { title, onPress, variant, style }: OnboardingButtonProps) {
+    let buttonStyle: ViewStyle;
+    let textStyle: TextStyle;
+
+    switch (variant) {
+        case 'primary':
+            buttonStyle = styles.primaryButton;
+            textStyle = styles.primaryButtonText;
+            break;
+        case 'secondary':
+            buttonStyle = styles.secondaryButton;
+            textStyle = styles.secondaryButtonText;
+            break;
+        case 'text':
+            buttonStyle = styles.textButton;
+            textStyle = styles.textButtonText;
+            break;
+        default:
+            buttonStyle = styles.primaryButton;
+            textStyle = styles.primaryButtonText;
+    }
 
     return (
         <TouchableOpacity style={[styles.button, buttonStyle]} onPress={onPress}>
-            <Text style={textStyle}>{title}</Text>
+            <Text style={[textStyle]}>{title}</Text>
         </TouchableOpacity>
     );
 }
@@ -37,12 +56,20 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     secondaryButton: {
-        backgroundColor: 'transparent',
+        backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#fff',
     },
     secondaryButtonText: {
-        color: '#fff',
+        color: '#f97316',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    textButton: {
+        backgroundColor: 'transparent',
+    },
+    textButtonText: {
+        color: '#ff9800', // Default text color for the 'text' variant
         fontSize: 16,
         fontWeight: 'bold',
     },

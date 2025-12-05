@@ -1,96 +1,57 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
-import { Animated, ImageBackground, ImageSourcePropType, StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
-interface OnboardingPageProps {
-    page: {
-        id: string;
-        image: ImageSourcePropType;
-        title: string;
-        subtitle: string;
-    };
-    index: number;
-    scrollOffset: Animated.Value;
-    position: Animated.Value;
-}
-
-export function OnboardingPage({ page, index, scrollOffset, position }: OnboardingPageProps) {
-    const inputRange = [index - 1, index, index + 1];
-
-    const opacity = Animated.add(scrollOffset, position).interpolate({
-        inputRange,
-        outputRange: [0, 1, 0],
-        extrapolate: 'clamp',
-    });
-
-    const translateY = Animated.add(scrollOffset, position).interpolate({
-        inputRange,
-        outputRange: [50, 0, 50],
-        extrapolate: 'clamp',
-    });
-
+export const OnboardingPage = ({ page }: any) => {
     return (
-        <View style={styles.container}>
-            <ImageBackground
-                source={page.image}
-                style={styles.imageBackground}
-                resizeMode="cover"
-            >
-                <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
-                    style={styles.gradient}
-                >
-                    <Animated.View
-                        style={[
-                            styles.textContainer,
-                            { opacity, transform: [{ translateY }] },
-                        ]}
-                    >
-                        <Text style={styles.title}>{page.title}</Text>
-                        <Text style={styles.subtitle}>{page.subtitle}</Text>
-                    </Animated.View>
-                </LinearGradient>
-            </ImageBackground>
+        <View style={[styles.container, { backgroundColor: page.backgroundColor }]}>
+            <Image source={page.image} style={styles.image} resizeMode="contain" />
+
+            <View style={{ marginTop: 48, alignItems: "center" }}>
+                <Text style={styles.titleBold}>{page.titleBold}</Text>
+                <Text style={styles.title}>{page.title}</Text>
+                <Text style={styles.subtitle}>{page.subtitle}</Text>
+            </View>
         </View>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000',
+        paddingHorizontal: 30,
+        justifyContent: "center",
+        alignItems: "center",
     },
-    imageBackground: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-        justifyContent: 'flex-end',
+
+    image: {
+        width: 250,
+        height: 250,
     },
-    gradient: {
-        flex: 1,
-        justifyContent: 'flex-end',
-        paddingHorizontal: 24,
-        paddingBottom: 100,
-    },
-    textContainer: {
-        alignItems: 'center',
-        paddingBottom: 40,
+
+    titleBold: {
+        fontFamily: "Roboto",
+        fontSize: 36,
+        lineHeight: 45,
+        fontWeight: "bold",
+        color: "#333",
+        textAlign: "center",
     },
     title: {
-        fontSize: 40,
-        letterSpacing: 0.25,
-        lineHeight: 48,
-        marginBottom: 12,
-        fontWeight: 'bold',
-        color: '#fff',
-        textAlign: 'center',
-        flexWrap: 'wrap',
+        fontFamily: "Roboto",
+        fontSize: 30,
+        lineHeight: 36,
+        fontWeight: "bold",
+        color: "#ff9800",
+        textAlign: "center",
+        marginTop: 4,
     },
     subtitle: {
+        fontFamily: "Roboto",
+        marginTop: 16,
         fontSize: 18,
-        color: '#ddd',
-        textAlign: 'center',
-        marginTop: 12,
+        fontWeight: "400",
         lineHeight: 24,
+        color: "#666",
+        textAlign: "center",
     },
 });

@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
-    Image,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -26,8 +25,26 @@ export default function NotificationPermissionScreen() {
     });
 
     useEffect(() => {
+        const checkPermission = async () => {
+            try {
+                setState((prev) => ({ ...prev, checking: true }));
+
+                const { status: existingStatus } = await Notifications.getPermissionsAsync();
+                console.log("Notification permission:", existingStatus);
+
+                // Sync with context if permission is granted
+                if (existingStatus === 'granted' && !hasPermission) {
+                    await checkContextPermission();
+                }
+            } catch (error) {
+                console.error("Error checking notification permission:", error);
+            } finally {
+                setState((prev) => ({ ...prev, checking: false }));
+            }
+        };
+
         checkPermission();
-    }, []);
+    }, [hasPermission, checkContextPermission]);
 
     // If permission is already granted, navigate away
     useEffect(() => {
@@ -36,25 +53,6 @@ export default function NotificationPermissionScreen() {
             router.push("/(tabs)");
         }
     }, [hasPermission, router]);
-
-    // ✅ Kiểm tra quyền thông báo
-    const checkPermission = async () => {
-        try {
-            setState((prev) => ({ ...prev, checking: true }));
-
-            const { status: existingStatus } = await Notifications.getPermissionsAsync();
-            console.log("Notification permission:", existingStatus);
-
-            // Sync with context if permission is granted
-            if (existingStatus === 'granted' && !hasPermission) {
-                await checkContextPermission();
-            }
-        } catch (error) {
-            console.error("Error checking notification permission:", error);
-        } finally {
-            setState((prev) => ({ ...prev, checking: false }));
-        }
-    };
 
     // 🚀 Xin quyền + gửi thông báo thử
     const requestPermission = async () => {
@@ -83,37 +81,14 @@ export default function NotificationPermissionScreen() {
 
     return (
         <View style={styles.container}>
-            <Image
-                source={{
-                    uri: "https://cdn-icons-png.flaticon.com/512/1827/1827349.png",
-                }}
-                style={styles.image}
-            />
 
-            <Text style={styles.title}>Enable Notifications</Text>
+            <Ionicons name="notifications" size={120} color="#FF6B35" style={styles.headerIcon} />
+
+            <Text style={styles.title}>Turn on notifications so you don’t miss anything</Text>
 
             <Text style={styles.subtitle}>
-                Stay updated with reminders for tasks, events, and daily habits.
-                Never miss what&apos;s important.
+                Allow notifications to remind you at the right time! (Reminders for tasks, events, and daily habits)
             </Text>
-
-            <View style={styles.benefitsContainer}>
-                <View style={styles.benefit}>
-                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={{ marginRight: 10 }} />
-                    <Text style={styles.benefitText}>Task deadline reminders</Text>
-                </View>
-
-                <View style={styles.benefit}>
-                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={{ marginRight: 10 }} />
-                    <Text style={styles.benefitText}>Event start notifications</Text>
-                </View>
-
-                <View style={styles.benefit}>
-                    <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={{ marginRight: 10 }} />
-                    <Text style={styles.benefitText}>Daily habit reminders</Text>
-                </View>
-            </View>
-
 
             <TouchableOpacity
                 style={[styles.button, state.requesting && styles.buttonDisabled]}
@@ -123,12 +98,15 @@ export default function NotificationPermissionScreen() {
                 {state.requesting ? (
                     <ActivityIndicator color="#fff" />
                 ) : (
-                    <Text style={styles.buttonText}>Enable Notifications</Text>
+                    <View style={styles.buttonContent}>
+                        <Ionicons name="checkmark-circle" size={20} color="#fff" style={styles.buttonIcon} />
+                        <Text style={styles.buttonText}>Allow notifications</Text>
+                    </View>
                 )}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => router.push("/(tabs)")}>
-                <Text style={styles.later}>Skip for now</Text>
+                <Text style={styles.later}>Activate later</Text>
             </TouchableOpacity>
         </View>
     );
@@ -145,21 +123,24 @@ const styles = StyleSheet.create({
     image: {
         width: 120,
         height: 120,
-        marginBottom: 30,
+        marginBottom: 40,
         borderRadius: 60,
+    },
+    headerIcon: {
+        marginBottom: 40,
     },
     title: {
         fontSize: 24,
         fontWeight: "800",
         color: "#222",
         textAlign: "center",
-        marginBottom: 15,
+        marginBottom: 20,
     },
     subtitle: {
         fontSize: 16,
         color: "#666",
         textAlign: "center",
-        marginBottom: 40,
+        marginBottom: 50,
         lineHeight: 22,
     },
     button: {
@@ -168,9 +149,7 @@ const styles = StyleSheet.create({
         paddingVertical: 18,
         paddingHorizontal: 40,
         width: "100%",
-        alignItems: "center",
-        marginBottom: 20,
-        shadowColor: "#000",
+        marginBottom: 25,
         shadowOpacity: 0.15,
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 4 },
@@ -188,25 +167,14 @@ const styles = StyleSheet.create({
         color: "#FF8C00",
         fontWeight: "600",
         fontSize: 14,
-        textDecorationLine: "underline",
     },
-    benefitsContainer: {
-        marginVertical: 20,
-        width: '100%',
-    },
-    benefit: {
+    buttonContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
-        paddingHorizontal: 10,
+        justifyContent: 'center',
     },
-    benefitIcon: {
-        fontSize: 16,
-        marginRight: 10,
-    },
-    benefitText: {
-        fontSize: 14,
-        color: "#666",
-        fontWeight: '500',
-    },
+    buttonIcon: {
+        marginRight: 8,
+    }
+
 });
