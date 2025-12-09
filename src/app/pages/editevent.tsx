@@ -370,7 +370,6 @@ export default function EditEventScreen() {
 }
 
 const ORANGE_COLOR = "#f97316";
-const ORANGE_LIGHT = "#fed7aa";
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#f5f5f5" },

@@ -11,7 +11,6 @@ import {
 } from '@/contexts/NotificationContext';
 import {
     ReminderType,
-    ReminderTime
 } from '@/types/reminder.types';
 
 interface UnifiedReminderSelectorProps {
@@ -38,7 +37,7 @@ export function UnifiedReminderSelector({
     // ===============================
 
     const { hasPermission, requestPermission } = useNotifications();
-    const { formatDisplay, getOptions } = useReminderConfig();
+    const { getOptions } = useReminderConfig();
 
     // ===============================
     // 📊 LOCAL STATE

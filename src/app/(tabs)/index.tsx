@@ -11,6 +11,7 @@ import { responsive } from '@/constants/theme';
 import { useTasks } from '@/contexts/TasksContext';
 import { useUser } from '@/contexts/UserContext';
 import { getEvents } from '@/db/database';
+import Banner from '@/services/ads/Banner';
 import { getDateString } from '@/utils/dateUtils';
 import { useFocusEffect } from '@react-navigation/native';
 import { format } from 'date-fns';
@@ -139,6 +140,7 @@ export default function HomeScreen() {
                 onConfirm={handleNameConfirm}
                 onCancel={handleNameCancel}
             />
+            <Banner />
         </ScrollView>
     );
 };

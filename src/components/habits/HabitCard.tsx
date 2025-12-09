@@ -78,6 +78,7 @@ const HabitCard: React.FC<HabitCardProps> = memo(({
     const translateX = useRef(new Animated.Value(0)).current;
 
     // Memoized handlers to prevent re-renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleGesture = useCallback(
         Animated.event(
             [{ nativeEvent: { translationX: translateX } }],

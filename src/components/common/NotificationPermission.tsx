@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 
 interface NotificationPermissionProps {
     onPermissionGranted?: () => void;

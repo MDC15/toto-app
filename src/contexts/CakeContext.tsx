@@ -5,8 +5,7 @@ import React, {
     useEffect,
     useReducer,
     useCallback,
-    useMemo,
-    memo
+    useMemo
 } from 'react';
 import { CakeDatabase } from '../db/cakeDatabase';
 import {
@@ -275,6 +274,60 @@ export const CakeProvider: React.FC<CakeProviderProps> = ({ children, userId = '
         return state.cakes.find(cake => cake.id === id) || null;
     }, [state.cakes]);
 
+    // Memoized achievement functions
+    const checkAchievements = useCallback(async (): Promise<void> => {
+        if (!state.collection) return;
+
+        const updatedAchievements = state.collection.achievements.map(achievement => {
+            let newProgress = achievement.progress;
+
+            switch (achievement.condition.type) {
+                case 'cakes_baked':
+                    newProgress = state.collection!.totalBaked;
+                    break;
+                case 'streak_days':
+                    newProgress = state.collection!.currentStreak;
+                    break;
+                case 'rating_achieved':
+                    newProgress = Math.min(state.collection!.bakingStats.averageRating, 5);
+                    break;
+                case 'category_mastered':
+                    if (achievement.condition.category) {
+                        const cakesInCategory = state.cakes.filter(cake =>
+                            cake.category.id === achievement.condition.category &&
+                            state.collection!.recentCakes.includes(cake.id)
+                        );
+                        newProgress = cakesInCategory.length;
+                    }
+                    break;
+            }
+
+            const isUnlocked = newProgress >= achievement.condition.target;
+            return {
+                ...achievement,
+                progress: newProgress,
+                isUnlocked,
+                unlockedAt: isUnlocked && !achievement.isUnlocked ? new Date() : achievement.unlockedAt
+            };
+        });
+
+        const newCollection = {
+            ...state.collection,
+            achievements: updatedAchievements
+        };
+
+        await CakeDatabase.updateUserCollection(getCurrentUserId(), newCollection);
+        dispatch({ type: 'UPDATE_ACHIEVEMENTS', payload: updatedAchievements });
+    }, [state.collection, state.cakes, getCurrentUserId]);
+
+    const getAchievements = useCallback((): Achievement[] => {
+        return state.collection?.achievements || [];
+    }, [state.collection]);
+
+    const getUnlockedAchievements = useCallback((): Achievement[] => {
+        return state.collection?.achievements.filter(achievement => achievement.isUnlocked) || [];
+    }, [state.collection]);
+
     // Optimized action functions
     const unlockCake = useCallback(async (cakeId: string): Promise<void> => {
         if (!state.collection || state.collection.unlockedCakes.includes(cakeId)) {
@@ -357,9 +410,9 @@ export const CakeProvider: React.FC<CakeProviderProps> = ({ children, userId = '
         // Update database asynchronously
         CakeDatabase.updateUserCollection(getCurrentUserId(), newCollection).catch(console.error);
 
-        // Check achievements asynchronously
-        checkAchievements().catch(console.error);
-    }, [state.collection, getCurrentUserId]);
+            // Check achievements asynchronously
+            checkAchievements().catch(console.error);
+        }, [state.collection, getCurrentUserId, checkAchievements]);
 
     // Memoized search function
     const searchCakes = useCallback((query: string): Cake[] => {
@@ -389,60 +442,6 @@ export const CakeProvider: React.FC<CakeProviderProps> = ({ children, userId = '
             dispatch({ type: 'SET_LOADING', payload: false });
         }
     }, []);
-
-    // Memoized achievement functions
-    const checkAchievements = useCallback(async (): Promise<void> => {
-        if (!state.collection) return;
-
-        const updatedAchievements = state.collection.achievements.map(achievement => {
-            let newProgress = achievement.progress;
-
-            switch (achievement.condition.type) {
-                case 'cakes_baked':
-                    newProgress = state.collection!.totalBaked;
-                    break;
-                case 'streak_days':
-                    newProgress = state.collection!.currentStreak;
-                    break;
-                case 'rating_achieved':
-                    newProgress = Math.min(state.collection!.bakingStats.averageRating, 5);
-                    break;
-                case 'category_mastered':
-                    if (achievement.condition.category) {
-                        const cakesInCategory = state.cakes.filter(cake =>
-                            cake.category.id === achievement.condition.category &&
-                            state.collection!.recentCakes.includes(cake.id)
-                        );
-                        newProgress = cakesInCategory.length;
-                    }
-                    break;
-            }
-
-            const isUnlocked = newProgress >= achievement.condition.target;
-            return {
-                ...achievement,
-                progress: newProgress,
-                isUnlocked,
-                unlockedAt: isUnlocked && !achievement.isUnlocked ? new Date() : achievement.unlockedAt
-            };
-        });
-
-        const newCollection = {
-            ...state.collection,
-            achievements: updatedAchievements
-        };
-
-        await CakeDatabase.updateUserCollection(getCurrentUserId(), newCollection);
-        dispatch({ type: 'UPDATE_ACHIEVEMENTS', payload: updatedAchievements });
-    }, [state.collection, state.cakes, getCurrentUserId]);
-
-    const getAchievements = useCallback((): Achievement[] => {
-        return state.collection?.achievements || [];
-    }, [state.collection]);
-
-    const getUnlockedAchievements = useCallback((): Achievement[] => {
-        return state.collection?.achievements.filter(achievement => achievement.isUnlocked) || [];
-    }, [state.collection]);
 
     // Memoized context value to prevent unnecessary re-renders
     const contextValue = useMemo((): CakeContextValue => ({

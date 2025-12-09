@@ -298,7 +298,6 @@ export default function EventListScreen() {
                                 if (hiddenCount === 0) return null;
 
                                 const hourEvents = events.filter(e => e.startTime.getHours() === hourSlot);
-                                const maxDisplayed = 3;
                                 const visibleEvents = hourEvents.filter((e) => {
                                     const layout = eventLayoutInfo[e.id];
                                     return layout && !layout.isHidden;

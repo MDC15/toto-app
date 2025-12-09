@@ -54,9 +54,6 @@ class IntegrationService implements IIntegrationService {
                 };
             }
 
-            // Create notification content
-            const notificationContent = this.createNotificationContent(config, calculatedTime);
-
             // Schedule the notification
             const scheduleResult = await notificationService.scheduleNotification(config, calculatedTime);
 
